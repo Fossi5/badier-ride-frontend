@@ -27,9 +27,10 @@ import RouteIcon from '@mui/icons-material/Route';
 import TimerIcon from '@mui/icons-material/Timer';
 import MapIcon from '@mui/icons-material/Map';
 
-import { getAllRoutes, optimizeRoute, getRouteDistance } from '../../api/routes';
+//import { getAllRoutes, optimizeRoute, getRouteDistance } from '../../api/routes';
 import { useAlert } from '../../context/AlertContext';
 import RouteMap from '../../components/maps/RouteMap';
+import { getAllRoutes, optimizeRoute, getRouteDistance, updateRouteStatus } from '../../api/routes';
 
 const RouteOptimization = () => {
   const [routes, setRoutes] = useState([]);
