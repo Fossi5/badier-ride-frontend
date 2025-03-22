@@ -305,3 +305,4 @@ const RouteOptimization = () => {
     </Container>
   );
 };
+export default RouteOptimization;
