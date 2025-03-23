@@ -46,9 +46,10 @@ mkdir -p src/context src/utils src/styles
 
 ## Étape 4 : Copier les fichiers du code source
 
-Copiez tous les fichiers fournis dans leurs dossiers respectifs, conformément à la structure du projet. 
+Copiez tous les fichiers fournis dans leurs dossiers respectifs, conformément à la structure du projet.
 
 Par exemple :
+
 - `api/axios.js` → `src/api/axios.js`
 - `context/AuthContext.jsx` → `src/context/AuthContext.jsx`
 - `components/common/Header.jsx` → `src/components/common/Header.jsx`
@@ -59,7 +60,7 @@ Par exemple :
 Ouvrez le fichier `src/api/axios.js` et vérifiez que l'URL de base est correctement définie :
 
 ```javascript
-const BASE_URL = 'http://localhost:8080/api';
+const BASE_URL = "http://localhost:8080/api";
 ```
 
 Modifiez-la si votre backend est accessible à une adresse différente.
@@ -69,7 +70,7 @@ Modifiez-la si votre backend est accessible à une adresse différente.
 Une fois tous les fichiers en place, démarrez l'application :
 
 ```bash
-npm start
+npm run dev
 ```
 
 L'application sera accessible à l'adresse http://localhost:3000.
@@ -85,15 +86,18 @@ Utilisez les identifiants suivants pour vous connecter (selon votre configuratio
 ## Fonctionnalités par rôle
 
 ### Administrateur
+
 - Gestion des chauffeurs et répartiteurs
 - Vue d'ensemble du système
 
 ### Répartiteur
+
 - Gestion des tournées
 - Optimisation des itinéraires
 - Suivi des livraisons
 
 ### Chauffeur
+
 - Visualisation des tournées assignées
 - Mise à jour du statut des livraisons
 - Navigation GPS vers les points de livraison
@@ -101,18 +105,24 @@ Utilisez les identifiants suivants pour vous connecter (selon votre configuratio
 ## Résolution des problèmes courants
 
 ### Problème de connexion à l'API
+
 Si vous rencontrez des erreurs de connexion à l'API, vérifiez :
+
 - Que votre backend est en cours d'exécution
 - Que les URL d'API sont correctes
 - Les erreurs CORS (peut nécessiter une configuration côté backend)
 
 ### Erreurs d'affichage de la carte
+
 Si la carte Leaflet ne s'affiche pas correctement :
+
 - Vérifiez que les coordonnées GPS sont valides dans vos objets d'adresse
 - Assurez-vous que les feuilles de style Leaflet sont bien importées
 
 ### Problèmes d'authentification
+
 Si vous ne pouvez pas vous connecter :
+
 - Vérifiez que les API d'authentification fonctionnent côté backend
 - Assurez-vous que le token JWT est correctement stocké et envoyé dans les en-têtes
 
