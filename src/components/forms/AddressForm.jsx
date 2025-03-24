@@ -18,25 +18,24 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
     street: '',
     city: '',
     postalCode: '',
-    country: 'France', // Valeur par défaut
+    country: 'France', // Default value
     latitude: null,
     longitude: null,
     isVerified: false,
     ...initialData
   });
   const [formErrors, setFormErrors] = useState({});
-  const [geolocationEnabled, setGeolocationEnabled] = useState(false);
   const [geolocating, setGeolocating] = useState(false);
 
-  // Gestion des changements de champs du formulaire
+  // Handle form field changes
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
-    
-    // Effacer l'erreur quand l'utilisateur modifie le champ
+
+    // Clear the error when the user modifies the field
     if (formErrors[name]) {
       setFormErrors({
         ...formErrors,
@@ -44,42 +43,50 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
       });
     }
   };
-  
-  // Validation du formulaire
+
+  // Validate the form
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData.street) {
       errors.street = 'La rue est obligatoire';
     }
-    
+
     if (!formData.city) {
       errors.city = 'La ville est obligatoire';
     }
-    
+
     if (!formData.postalCode) {
       errors.postalCode = 'Le code postal est obligatoire';
     } else if (!/^\d{5}$/.test(formData.postalCode)) {
       errors.postalCode = 'Le code postal doit contenir 5 chiffres';
     }
-    
+
     if (!formData.country) {
       errors.country = 'Le pays est obligatoire';
     }
-    
-    if (formData.latitude !== null && formData.latitude !== '' && (isNaN(formData.latitude) || formData.latitude < -90 || formData.latitude > 90)) {
+
+    if (
+      formData.latitude !== null &&
+      formData.latitude !== '' &&
+      (isNaN(formData.latitude) || formData.latitude < -90 || formData.latitude > 90)
+    ) {
       errors.latitude = 'La latitude doit être entre -90 et 90';
     }
-    
-    if (formData.longitude !== null && formData.longitude !== '' && (isNaN(formData.longitude) || formData.longitude < -180 || formData.longitude > 180)) {
+
+    if (
+      formData.longitude !== null &&
+      formData.longitude !== '' &&
+      (isNaN(formData.longitude) || formData.longitude < -180 || formData.longitude > 180)
+    ) {
       errors.longitude = 'La longitude doit être entre -180 et 180';
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // Récupération des coordonnées GPS
+  // Fetch GPS coordinates
   const fetchGeoCoordinates = () => {
     if (navigator.geolocation) {
       setGeolocating(true);
@@ -91,31 +98,37 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             longitude: position.coords.longitude
           });
           setGeolocating(false);
-          setGeolocationEnabled(true);
         },
         (error) => {
           console.error('Erreur de géolocalisation:', error);
           setGeolocating(false);
-          setGeolocationEnabled(false);
-          alert('Impossible d\'obtenir votre position. Veuillez vérifier vos paramètres de géolocalisation.');
+          alert(
+            "Impossible d'obtenir votre position. Veuillez vérifier vos paramètres de géolocalisation."
+          );
         }
       );
     } else {
-      alert('La géolocalisation n\'est pas prise en charge par votre navigateur.');
+      alert("La géolocalisation n'est pas prise en charge par votre navigateur.");
     }
   };
 
-  // Soumission du formulaire
+  // Handle form submission
   const handleSubmit = () => {
     if (!validateForm()) return;
-    
-    // Convertir latitude et longitude en nombres
+
+    // Convert latitude and longitude to numbers
     const formattedData = {
       ...formData,
-      latitude: formData.latitude !== null && formData.latitude !== '' ? parseFloat(formData.latitude) : null,
-      longitude: formData.longitude !== null && formData.longitude !== '' ? parseFloat(formData.longitude) : null
+      latitude:
+        formData.latitude !== null && formData.latitude !== ''
+          ? parseFloat(formData.latitude)
+          : null,
+      longitude:
+        formData.longitude !== null && formData.longitude !== ''
+          ? parseFloat(formData.longitude)
+          : null
     };
-    
+
     onSubmit(formattedData);
   };
 
@@ -136,7 +149,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             disabled={submitting}
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6}>
           <TextField
             required
@@ -151,7 +164,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             disabled={submitting}
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6}>
           <TextField
             required
@@ -167,7 +180,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             inputProps={{ maxLength: 5 }}
           />
         </Grid>
-        
+
         <Grid item xs={12}>
           <TextField
             required
@@ -182,7 +195,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             disabled={submitting}
           />
         </Grid>
-        
+
         <Grid item xs={12}>
           <Divider sx={{ my: 1 }}>
             <Typography variant="body2" color="text.secondary">
@@ -190,7 +203,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             </Typography>
           </Divider>
         </Grid>
-        
+
         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
           <Button
             variant="outlined"
@@ -201,7 +214,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             {geolocating ? 'Récupération...' : 'Obtenir ma position actuelle'}
           </Button>
         </Grid>
-        
+
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
@@ -214,10 +227,10 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             helperText={formErrors.latitude}
             disabled={submitting}
             type="number"
-            inputProps={{ step: "0.000001" }}
+            inputProps={{ step: '0.000001' }}
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
@@ -230,10 +243,10 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             helperText={formErrors.longitude}
             disabled={submitting}
             type="number"
-            inputProps={{ step: "0.000001" }}
+            inputProps={{ step: '0.000001' }}
           />
         </Grid>
-        
+
         <Grid item xs={12}>
           <FormControlLabel
             control={
@@ -248,16 +261,12 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             label="Adresse vérifiée"
           />
         </Grid>
-        
+
         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-          <Button 
-            onClick={onCancel}
-            disabled={submitting}
-            sx={{ mr: 2 }}
-          >
+          <Button onClick={onCancel} disabled={submitting} sx={{ mr: 2 }}>
             Annuler
           </Button>
-          <Button 
+          <Button
             onClick={handleSubmit}
             variant="contained"
             startIcon={submitting ? <CircularProgress size={20} /> : null}
