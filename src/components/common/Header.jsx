@@ -1,5 +1,6 @@
 // src/components/common/Header.jsx
 import React, { useState } from 'react';
+import LocationOnIcon from '@mui/icons-material/LocationOn'; // Correct icon import
 import { 
   AppBar, 
   Toolbar, 
@@ -76,6 +77,7 @@ const Header = () => {
     { text: 'Tableau de bord', icon: <Dashboard />, path: '/admin/dashboard' },
     { text: 'Chauffeurs', icon: <DirectionsCar />, path: '/admin/drivers' },
     { text: 'Répartiteurs', icon: <People />, path: '/admin/dispatchers' },
+    { text: 'Adresses', icon: <LocationOnIcon />, path: '/admin/addresses' }, // Fixed icon
   ];
   
   // Elements du tiroir de navigation pour le répartiteur

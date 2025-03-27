@@ -156,7 +156,7 @@ const DeliveryPointForm = ({ initialData, onSubmit, onCancel, submitting }) => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', my: A4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
         <CircularProgress />
       </Box>
     );
