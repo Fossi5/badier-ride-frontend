@@ -1,9 +1,9 @@
 // src/api/addresses.js
-import api from './axios';
+import api from "./axios";
 
 // Récupérer toutes les adresses
 export const getAllAddresses = () => {
-  return api.get('/addresses');
+  return api.get("/addresses");
 };
 
 // Récupérer une adresse spécifique
@@ -19,13 +19,26 @@ export const getAddressesByCity = (city) => {
 // Créer une nouvelle adresse
 export const createAddress = (addressData) => {
   console.log("Données envoyées pour création d'adresse:", addressData);
-  return api.post('/addresses', addressData);
+  const token = localStorage.getItem("authToken");
+  return api.post("/addresses", addressData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
 
 // Mettre à jour une adresse
 export const updateAddress = (id, addressData) => {
-  console.log(`Données envoyées pour mise à jour d'adresse ${id}:`, addressData);
-  return api.put(`/addresses/${id}`, addressData);
+  console.log(
+    `Données envoyées pour mise à jour d'adresse ${id}:`,
+    addressData
+  );
+  const token = localStorage.getItem("authToken"); // ou tout autre mécanisme de stockage du token
+  return api.put(`/addresses/${id}`, addressData, {
+    headers: {
+      Authorization: `Bearer ${token}`, // Assurez-vous que le format correspond à ce qu'attend votre API
+    },
+  });
 };
 
 // Supprimer une adresse
@@ -35,5 +48,5 @@ export const deleteAddress = (id) => {
 
 // Vérifier les doublons potentiels
 export const checkDuplicateAddresses = (addressData) => {
-  return api.post('/addresses/check-duplicates', addressData);
+  return api.post("/addresses/check-duplicates", addressData);
 };
