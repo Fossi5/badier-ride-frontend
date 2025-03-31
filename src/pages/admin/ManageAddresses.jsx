@@ -27,7 +27,7 @@ const ManageAddresses = () => {
       setAddresses(res.data);
     } catch (error) {
       showAlert(`Erreur lors du chargement des adresses: ${error.message}`, 'error');
-      console.error('Error fetching addresses:', error); // Optional: Log the error for debugging
+      console.error('Erreur lors du chargement des adresses:', error);
     } finally {
       setLoading(false);
     }
@@ -66,8 +66,8 @@ const ManageAddresses = () => {
         await createAddress(data);
         showAlert('Adresse créée avec succès', 'success');
       }
-      setModalOpen(false);
-      fetchAddresses();
+      setModalOpen(false); // Ferme la modale
+      fetchAddresses();    // Recharge la liste
     } catch {
       showAlert('Erreur lors de l’enregistrement', 'error');
     }
@@ -83,7 +83,7 @@ const ManageAddresses = () => {
 
   return (
     <Box className="container mt-4">
-    <Box className="flex justify-between items-center mb-4">
+      <Box className="flex justify-between items-center mb-4">
   <Typography variant="h5">Gestion des adresses</Typography>
   {!modalOpen ? (
     <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
@@ -96,16 +96,16 @@ const ManageAddresses = () => {
   )}
 </Box>
 
-  
-
-
-      <DataTable
-        data={addresses}
-        columns={columns}
-        loading={loading}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      {/* Affiche la table uniquement si la modale est fermée */}
+      {!modalOpen && (
+        <DataTable
+          data={addresses}
+          columns={columns}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
 
       <ModalContainer
         open={modalOpen}
