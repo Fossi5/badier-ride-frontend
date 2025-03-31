@@ -18,11 +18,13 @@ export const getAddressesByCity = (city) => {
 
 // Créer une nouvelle adresse
 export const createAddress = (addressData) => {
+  console.log("Données envoyées pour création d'adresse:", addressData);
   return api.post('/addresses', addressData);
 };
 
 // Mettre à jour une adresse
 export const updateAddress = (id, addressData) => {
+  console.log(`Données envoyées pour mise à jour d'adresse ${id}:`, addressData);
   return api.put(`/addresses/${id}`, addressData);
 };
 

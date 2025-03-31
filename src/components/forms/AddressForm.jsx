@@ -1,5 +1,5 @@
 // src/components/forms/AddressForm.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -9,9 +9,11 @@ import {
   Typography,
   Divider,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  Alert
 } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import { isValidLatitude, isValidLongitude } from '../../utils/validators';
 
 const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
   const [formData, setFormData] = useState({
@@ -19,13 +21,30 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
     city: '',
     postalCode: '',
     country: 'France', // Default value
-    latitude: null,
-    longitude: null,
+    latitude: '',
+    longitude: '',
     isVerified: false,
     ...initialData
   });
   const [formErrors, setFormErrors] = useState({});
   const [geolocating, setGeolocating] = useState(false);
+  const [geoError, setGeoError] = useState(null);
+
+  // Si initialData change (ex: passage du mode création à édition)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        street: '',
+        city: '',
+        postalCode: '',
+        country: 'France',
+        latitude: '',
+        longitude: '',
+        isVerified: false,
+        ...initialData
+      });
+    }
+  }, [initialData]);
 
   // Handle form field changes
   const handleFormChange = (e) => {
@@ -69,7 +88,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
     if (
       formData.latitude !== null &&
       formData.latitude !== '' &&
-      (isNaN(formData.latitude) || formData.latitude < -90 || formData.latitude > 90)
+      !isValidLatitude(formData.latitude)
     ) {
       errors.latitude = 'La latitude doit être entre -90 et 90';
     }
@@ -77,7 +96,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
     if (
       formData.longitude !== null &&
       formData.longitude !== '' &&
-      (isNaN(formData.longitude) || formData.longitude < -180 || formData.longitude > 180)
+      !isValidLongitude(formData.longitude)
     ) {
       errors.longitude = 'La longitude doit être entre -180 et 180';
     }
@@ -88,27 +107,48 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
 
   // Fetch GPS coordinates
   const fetchGeoCoordinates = () => {
+    setGeoError(null);
+    
     if (navigator.geolocation) {
       setGeolocating(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setFormData({
             ...formData,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
+            latitude: position.coords.latitude.toFixed(6),
+            longitude: position.coords.longitude.toFixed(6)
           });
           setGeolocating(false);
         },
         (error) => {
           console.error('Erreur de géolocalisation:', error);
           setGeolocating(false);
-          alert(
-            "Impossible d'obtenir votre position. Veuillez vérifier vos paramètres de géolocalisation."
-          );
+          
+          let errorMsg = "Impossible d'obtenir votre position.";
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMsg += " Vous avez refusé l'accès à la géolocalisation.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMsg += " Les données de localisation sont indisponibles.";
+              break;
+            case error.TIMEOUT:
+              errorMsg += " La demande de localisation a expiré.";
+              break;
+            default:
+              errorMsg += " Une erreur inconnue s'est produite.";
+          }
+          
+          setGeoError(errorMsg);
+        },
+        { 
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     } else {
-      alert("La géolocalisation n'est pas prise en charge par votre navigateur.");
+      setGeoError("La géolocalisation n'est pas prise en charge par votre navigateur.");
     }
   };
 
@@ -116,7 +156,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
   const handleSubmit = () => {
     if (!validateForm()) return;
 
-    // Convert latitude and longitude to numbers
+    // Convert latitude and longitude to numbers if present
     const formattedData = {
       ...formData,
       latitude:
@@ -147,6 +187,8 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             error={!!formErrors.street}
             helperText={formErrors.street}
             disabled={submitting}
+            autoFocus
+            placeholder="123 rue des Exemples"
           />
         </Grid>
 
@@ -162,6 +204,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             error={!!formErrors.city}
             helperText={formErrors.city}
             disabled={submitting}
+            placeholder="Paris"
           />
         </Grid>
 
@@ -178,6 +221,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             helperText={formErrors.postalCode}
             disabled={submitting}
             inputProps={{ maxLength: 5 }}
+            placeholder="75001"
           />
         </Grid>
 
@@ -193,6 +237,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             error={!!formErrors.country}
             helperText={formErrors.country}
             disabled={submitting}
+            placeholder="France"
           />
         </Grid>
 
@@ -203,6 +248,12 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             </Typography>
           </Divider>
         </Grid>
+
+        {geoError && (
+          <Grid item xs={12}>
+            <Alert severity="error">{geoError}</Alert>
+          </Grid>
+        )}
 
         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
           <Button
@@ -226,8 +277,8 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             error={!!formErrors.latitude}
             helperText={formErrors.latitude}
             disabled={submitting}
-            type="number"
-            inputProps={{ step: '0.000001' }}
+            type="text"
+            placeholder="48.858844"
           />
         </Grid>
 
@@ -242,8 +293,8 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             error={!!formErrors.longitude}
             helperText={formErrors.longitude}
             disabled={submitting}
-            type="number"
-            inputProps={{ step: '0.000001' }}
+            type="text"
+            placeholder="2.294351"
           />
         </Grid>
 
@@ -269,9 +320,11 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
           <Button
             onClick={handleSubmit}
             variant="contained"
-            startIcon={submitting ? <CircularProgress size={20} /> : null}
             disabled={submitting}
           >
+            {submitting ? (
+              <CircularProgress size={24} sx={{ mr: 1 }} />
+            ) : null}
             {initialData ? 'Mettre à jour' : 'Créer'}
           </Button>
         </Grid>
