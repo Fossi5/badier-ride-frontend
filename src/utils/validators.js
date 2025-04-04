@@ -36,8 +36,8 @@ export const isValidEmail = (email) => {
   export const isValidPostalCode = (postalCode) => {
     if (!postalCode) return false;
     
-    // Regex pour un code postal français (5 chiffres)
-    const postalCodeRegex = /^[0-9]{5}$/;
+    // Regex pour un code postal français (4 chiffres)
+    const postalCodeRegex = /^[0-9]{4}$/;
     return postalCodeRegex.test(postalCode);
   };
   
@@ -52,6 +52,7 @@ export const isValidEmail = (email) => {
     try {
       new URL(url);
       return true;
+    // eslint-disable-next-line no-unused-vars
     } catch (e) {
       return false;
     }

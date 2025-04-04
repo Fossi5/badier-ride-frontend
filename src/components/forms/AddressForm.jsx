@@ -77,8 +77,8 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
 
     if (!formData.postalCode) {
       errors.postalCode = 'Le code postal est obligatoire';
-    } else if (!/^\d{5}$/.test(formData.postalCode)) {
-      errors.postalCode = 'Le code postal doit contenir 5 chiffres';
+    } else if (!/^\d{4}$/.test(formData.postalCode)) {
+      errors.postalCode = 'Le code postal doit contenir 4 chiffres';
     }
 
     if (!formData.country) {
@@ -220,8 +220,8 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             error={!!formErrors.postalCode}
             helperText={formErrors.postalCode}
             disabled={submitting}
-            inputProps={{ maxLength: 5 }}
-            placeholder="75001"
+            inputProps={{ maxLength: 4 }}
+            placeholder="7000"
           />
         </Grid>
 
