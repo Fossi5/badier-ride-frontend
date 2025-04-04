@@ -27,7 +27,9 @@ import {
   Grid,
   CircularProgress,
   Divider,
-  Tooltip
+  Tooltip,
+  Alert,
+  AlertTitle
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -67,11 +69,19 @@ import { useAuth } from '../../context/AuthContext';
 const ManageRoutes = () => {
   const [routes, setRoutes] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [availableDrivers, setAvailableDrivers] = useState([]);
   const [dispatchers, setDispatchers] = useState([]);
   const [deliveryPoints, setDeliveryPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  // États pour les erreurs d'autorisations
+  const [authErrors, setAuthErrors] = useState({
+    driversError: false,
+    dispatchersError: false,
+    routesError: false
+  });
   
   // États pour le dialogue de création/édition
   const [openRouteDialog, setOpenRouteDialog] = useState(false);
@@ -96,7 +106,7 @@ const ManageRoutes = () => {
   
   // Hooks et contextes
   const navigate = useNavigate();
-  const { success, error, info } = useAlert();
+  const { success, error,  } = useAlert();
   const { currentUser } = useAuth();
   
   // Charger les données au montage du composant
@@ -107,25 +117,74 @@ const ManageRoutes = () => {
   // Fonction pour charger toutes les données nécessaires
   const fetchData = async () => {
     setLoading(true);
+    
+    // Réinitialiser les erreurs d'autorisation
+    setAuthErrors({
+      driversError: false,
+      dispatchersError: false,
+      routesError: false
+    });
+    
+    // Charger les tournées
     try {
-      // Charger les données en parallèle pour optimiser les performances
-      const [routesRes, driversRes, dispatchersRes, deliveryPointsRes] = await Promise.all([
-        getAllRoutes(),
-        getAvailableDrivers(),
-        getAllDispatchers(),
-        getAllDeliveryPoints()
-      ]);
-      
+      const routesRes = await getAllRoutes();
       setRoutes(routesRes.data);
-      setDrivers(driversRes.data);
-      setDispatchers(dispatchersRes.data);
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setAuthErrors(prev => ({ ...prev, routesError: true }));
+        error("Vous n'avez pas l'autorisation d'accéder aux tournées");
+      } else {
+        error('Erreur lors du chargement des tournées: ' + (err.response?.data?.error || err.message));
+      }
+      console.error('Erreur routes:', err);
+    }
+    
+    // Charger les points de livraison
+    try {
+      const deliveryPointsRes = await getAllDeliveryPoints();
       setDeliveryPoints(deliveryPointsRes.data);
     } catch (err) {
-      error('Erreur lors du chargement des données: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
-    } finally {
-      setLoading(false);
+      error('Erreur lors du chargement des points de livraison: ' + (err.response?.data?.error || err.message));
+      console.error('Erreur points de livraison:', err);
     }
+    
+    // Charger les chauffeurs disponibles
+    try {
+      const availableDriversRes = await getAvailableDrivers();
+      setAvailableDrivers(availableDriversRes.data);
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setAuthErrors(prev => ({ ...prev, driversError: true }));
+        console.warn("Pas d'accès aux chauffeurs disponibles, utilisation des chauffeurs standards");
+        
+        // Tenter de charger les chauffeurs standards comme fallback
+        try {
+          const driversRes = await getAllDrivers();
+          setDrivers(driversRes.data);
+        } catch (driverErr) {
+          console.error('Erreur fallback chauffeurs:', driverErr);
+        }
+      } else {
+        error('Erreur lors du chargement des chauffeurs disponibles: ' + (err.response?.data?.error || err.message));
+        console.error('Erreur chauffeurs disponibles:', err);
+      }
+    }
+    
+    // Charger les répartiteurs
+    try {
+      const dispatchersRes = await getAllDispatchers();
+      setDispatchers(dispatchersRes.data);
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setAuthErrors(prev => ({ ...prev, dispatchersError: true }));
+        console.warn("Pas d'accès aux répartiteurs");
+      } else {
+        error('Erreur lors du chargement des répartiteurs: ' + (err.response?.data?.error || err.message));
+        console.error('Erreur répartiteurs:', err);
+      }
+    }
+    
+    setLoading(false);
   };
 
   // Gestion du changement de page
@@ -141,6 +200,12 @@ const ManageRoutes = () => {
   
   // Ouverture du dialogue pour créer une nouvelle tournée
   const handleOpenCreateDialog = () => {
+    // Vérifier si toutes les données nécessaires sont disponibles
+    if (authErrors.driversError && authErrors.dispatchersError) {
+      error("Vous n'avez pas les autorisations nécessaires pour créer une tournée");
+      return;
+    }
+    
     // Préremplir avec le dispatcher actuel si l'utilisateur est un dispatcher
     let initialData = {
       name: '',
@@ -168,13 +233,19 @@ const ManageRoutes = () => {
   
   // Ouverture du dialogue pour éditer une tournée existante
   const handleOpenEditDialog = (route) => {
+    // Vérifier si toutes les données nécessaires sont disponibles
+    if (authErrors.driversError && authErrors.dispatchersError) {
+      error("Vous n'avez pas les autorisations nécessaires pour modifier une tournée");
+      return;
+    }
+    
     setDialogMode('edit');
     setSelectedRoute(route);
     setFormData({
       name: route.name,
-      driverId: route.driver.id,
-      dispatcherId: route.dispatcher.id,
-      deliveryPointIds: route.deliveryPoints.map(dp => dp.id),
+      driverId: route.driver?.id || '',
+      dispatcherId: route.dispatcher?.id || '',
+      deliveryPointIds: route.deliveryPoints?.map(dp => dp.id) || [],
       startTime: route.startTime ? new Date(route.startTime) : null,
       endTime: route.endTime ? new Date(route.endTime) : null,
       notes: route.notes || '',
@@ -224,7 +295,7 @@ const ManageRoutes = () => {
   };
   
   // Validation du formulaire
-  const validateForm = () => {
+  /*const validateForm = () => {
     const errors = {};
     
     if (!formData.name) {
@@ -249,10 +320,10 @@ const ManageRoutes = () => {
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  };*/
   
   // Soumission du formulaire
-  const handleSubmit = async () => {
+  /*const handleSubmit = async () => {
     if (!validateForm()) return;
     
     setSubmitting(true);
@@ -278,12 +349,102 @@ const ManageRoutes = () => {
       handleCloseRouteDialog();
       fetchData();
     } catch (err) {
-      error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée: ` + (err.response?.data?.error || err.message));
+      if (err.response?.status === 403) {
+        error(`Vous n'avez pas l'autorisation de ${dialogMode === 'create' ? 'créer' : 'modifier'} une tournée`);
+      } else {
+        error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée: ` + (err.response?.data?.error || err.message));
+      }
       console.error('Erreur:', err);
     } finally {
       setSubmitting(false);
     }
-  };
+  };*/
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.name) {
+        errors.name = 'Le nom de la tournée est obligatoire';
+    }
+    
+    if (!formData.driverId) {
+        errors.driverId = 'Veuillez sélectionner un chauffeur';
+    }
+    
+    // Ne validez le champ dispatcherId que si l'utilisateur n'est pas un dispatcher
+    if (!formData.dispatcherId && currentUser?.role !== 'DISPATCHER') {
+        errors.dispatcherId = 'Veuillez sélectionner un répartiteur';
+    }
+    
+    if (formData.deliveryPointIds.length === 0) {
+        errors.deliveryPointIds = 'Veuillez sélectionner au moins un point de livraison';
+    }
+    
+    if (!formData.startTime) {
+        errors.startTime = 'La date et heure de début sont obligatoires';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+};
+
+const handleSubmit = async () => {
+  if (!validateForm()) return;
+  
+  console.log('--- DÉBUT SOUMISSION FORMULAIRE ---');
+  console.log('Données du formulaire:', formData);
+  console.log('État d\'authentification:', { 
+    token: localStorage.getItem('token') ? 'présent' : 'absent',
+    userRole: localStorage.getItem('userRole'),
+    currentUser
+  });
+  
+  // S'assurer que le dispatcherId est défini pour un dispatcher
+  let submissionData = { ...formData };
+  
+  if (currentUser?.role === 'DISPATCHER') {
+    const currentDispatcher = dispatchers.find(d => d.username === currentUser.username);
+    if (currentDispatcher) {
+      submissionData.dispatcherId = currentDispatcher.id;
+      console.log('Dispatcher ID défini automatiquement:', currentDispatcher.id);
+    } else {
+      console.warn('Dispatcher actuel non trouvé dans la liste!');
+    }
+  }
+  
+  setSubmitting(true);
+  
+  try {
+    console.log('Envoi de la requête avec données:', submissionData);
+    
+    if (dialogMode === 'create') {
+      const result = await createRoute(submissionData);
+      console.log('Création réussie, résultat:', result);
+      success('Tournée créée avec succès');
+    } else {
+      const result = await updateRoute(selectedRoute.id, submissionData);
+      console.log('Mise à jour réussie, résultat:', result);
+      success('Tournée mise à jour avec succès');
+    }
+    
+    console.log('Fermeture du dialogue et rafraîchissement des données');
+    handleCloseRouteDialog();
+    fetchData();
+  } catch (err) {
+    console.error('--- ERREUR LORS DE LA SOUMISSION ---');
+    console.error('Type d\'erreur:', err.name);
+    console.error('Message:', err.message);
+    console.error('URL:', err.config?.url);
+    console.error('Méthode:', err.config?.method);
+    console.error('Statut:', err.response?.status);
+    console.error('Données de réponse:', err.response?.data);
+    
+    error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée: ` + (err.response?.data?.error || err.message));
+  } finally {
+    setSubmitting(false);
+    console.log('--- FIN SOUMISSION FORMULAIRE ---');
+  }
+};
   
   // Ouverture du dialogue de confirmation de suppression
   const handleOpenDeleteDialog = (route) => {
@@ -309,7 +470,11 @@ const ManageRoutes = () => {
       handleCloseDeleteDialog();
       fetchData();
     } catch (err) {
-      error('Erreur lors de la suppression de la tournée: ' + (err.response?.data?.error || err.message));
+      if (err.response?.status === 403) {
+        error("Vous n'avez pas l'autorisation de supprimer une tournée");
+      } else {
+        error('Erreur lors de la suppression de la tournée: ' + (err.response?.data?.error || err.message));
+      }
       console.error('Erreur:', err);
     }
   };
@@ -321,7 +486,11 @@ const ManageRoutes = () => {
       success(`Statut de la tournée mis à jour: ${newStatus}`);
       fetchData();
     } catch (err) {
-      error('Erreur lors de la mise à jour du statut: ' + (err.response?.data?.error || err.message));
+      if (err.response?.status === 403) {
+        error("Vous n'avez pas l'autorisation de modifier le statut d'une tournée");
+      } else {
+        error('Erreur lors de la mise à jour du statut: ' + (err.response?.data?.error || err.message));
+      }
       console.error('Erreur:', err);
     }
   };
@@ -331,8 +500,35 @@ const ManageRoutes = () => {
     navigate(`/dispatcher/optimize?routeId=${routeId}`);
   };
   
+  // Détermine si l'utilisateur courant est le dispatcher assigné à la tournée
+  const isAssignedDispatcher = (route) => {
+    return currentUser?.role === 'DISPATCHER' && 
+           route.dispatcher && 
+           route.dispatcher.username === currentUser.username;
+  };
+  
+  // Détermine si l'utilisateur a le droit de modifier une tournée spécifique
+  const canEditRoute = (route) => {
+    return currentUser?.role === 'ADMIN' || isAssignedDispatcher(route);
+  };
+  
+  // Déterminer les drivers à afficher dans la liste
+  const getDriversForList = () => {
+    return authErrors.driversError ? drivers : availableDrivers.length > 0 ? availableDrivers : drivers;
+  };
+  
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Affichage des alertes pour les erreurs d'autorisation */}
+      {(authErrors.driversError || authErrors.dispatchersError) && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <AlertTitle>Attention</AlertTitle>
+          {authErrors.driversError && "Vous n'avez pas accès à certaines fonctionnalités liées aux chauffeurs. "}
+          {authErrors.dispatchersError && "Vous n'avez pas accès à certaines fonctionnalités liées aux répartiteurs. "}
+          Certaines fonctionnalités peuvent être limitées.
+        </Alert>
+      )}
+      
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           Gestion des tournées
@@ -349,7 +545,7 @@ const ManageRoutes = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleOpenCreateDialog}
-            disabled={loading}
+            disabled={loading || (authErrors.driversError && authErrors.dispatchersError)}
           >
             Nouvelle tournée
           </Button>
@@ -361,6 +557,10 @@ const ManageRoutes = () => {
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
               <CircularProgress />
+            </Box>
+          ) : routes.length === 0 ? (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+              <Typography>Aucune tournée disponible</Typography>
             </Box>
           ) : (
             <Table stickyHeader aria-label="table des tournées">
@@ -383,8 +583,8 @@ const ManageRoutes = () => {
                     <TableRow key={route.id} hover>
                       <TableCell>{route.id}</TableCell>
                       <TableCell>{route.name}</TableCell>
-                      <TableCell>{route.driver.username}</TableCell>
-                      <TableCell>{route.dispatcher.username}</TableCell>
+                      <TableCell>{route.driver?.username || 'Non assigné'}</TableCell>
+                      <TableCell>{route.dispatcher?.username || 'Non assigné'}</TableCell>
                       <TableCell>
                         <Chip 
                           size="small" 
@@ -396,39 +596,49 @@ const ManageRoutes = () => {
                           }
                         />
                       </TableCell>
-                      <TableCell>{route.deliveryPoints.length}</TableCell>
+                      <TableCell>{route.deliveryPoints?.length || 0}</TableCell>
                       <TableCell>
                         {route.startTime ? format(new Date(route.startTime), 'dd/MM/yyyy HH:mm') : '-'}
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex' }}>
                           <Tooltip title="Modifier">
-                            <IconButton size="small" onClick={() => handleOpenEditDialog(route)}>
-                              <EditIcon fontSize="small" />
-                            </IconButton>
+                            <span>
+                              <IconButton 
+                                size="small" 
+                                onClick={() => handleOpenEditDialog(route)}
+                                disabled={!canEditRoute(route)}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                           
                           <Tooltip title="Supprimer">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleOpenDeleteDialog(route)}
-                              disabled={route.status === 'IN_PROGRESS'}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
+                            <span>
+                              <IconButton 
+                                size="small" 
+                                onClick={() => handleOpenDeleteDialog(route)}
+                                disabled={!canEditRoute(route) || route.status === 'IN_PROGRESS'}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                           
                           <Tooltip title="Optimiser">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleOptimizeRoute(route.id)}
-                              disabled={route.status === 'COMPLETED' || route.status === 'CANCELLED'}
-                            >
-                              <MapIcon fontSize="small" />
-                            </IconButton>
+                            <span>
+                              <IconButton 
+                                size="small" 
+                                onClick={() => handleOptimizeRoute(route.id)}
+                                disabled={route.status === 'COMPLETED' || route.status === 'CANCELLED'}
+                              >
+                                <MapIcon fontSize="small" />
+                              </IconButton>
+                            </span>
                           </Tooltip>
                           
-                          {route.status === 'PLANNED' && (
+                          {canEditRoute(route) && route.status === 'PLANNED' && (
                             <Tooltip title="Démarrer">
                               <IconButton 
                                 size="small" 
@@ -440,7 +650,7 @@ const ManageRoutes = () => {
                             </Tooltip>
                           )}
                           
-                          {route.status === 'IN_PROGRESS' && (
+                          {canEditRoute(route) && route.status === 'IN_PROGRESS' && (
                             <Tooltip title="Terminer">
                               <IconButton 
                                 size="small" 
@@ -455,13 +665,6 @@ const ManageRoutes = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                {routes.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center">
-                      Aucune tournée trouvée
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           )}
@@ -521,9 +724,9 @@ const ManageRoutes = () => {
                     value={formData.driverId}
                     onChange={handleFormChange}
                     label="Chauffeur"
-                    disabled={submitting}
+                    disabled={submitting || authErrors.driversError}
                   >
-                    {drivers.map((driver) => (
+                    {getDriversForList().map((driver) => (
                       <MenuItem key={driver.id} value={driver.id}>
                         {driver.username} 
                         {driver.vehicleType && ` - ${driver.vehicleType}`}
@@ -548,7 +751,7 @@ const ManageRoutes = () => {
                     value={formData.dispatcherId}
                     onChange={handleFormChange}
                     label="Répartiteur"
-                    disabled={submitting || (currentUser?.role === 'DISPATCHER')}
+                    disabled={submitting || (currentUser?.role === 'DISPATCHER') || authErrors.dispatchersError}
                   >
                     {dispatchers.map((dispatcher) => (
                       <MenuItem key={dispatcher.id} value={dispatcher.id}>
@@ -596,7 +799,7 @@ const ManageRoutes = () => {
                       .filter(dp => dp.deliveryStatus !== 'COMPLETED' && dp.deliveryStatus !== 'FAILED')
                       .map((dp) => (
                         <MenuItem key={dp.id} value={dp.id}>
-                          {dp.clientName} - {dp.address.street}, {dp.address.city}
+                          {dp.clientName} - {dp.address?.street}, {dp.address?.city}
                         </MenuItem>
                       ))}
                   </Select>
@@ -734,5 +937,4 @@ const ManageRoutes = () => {
     </Container>
   );
 };
-
 export default ManageRoutes;

@@ -28,12 +28,12 @@ export const getRoutesByDispatcher = (dispatcherId) => {
 
 // Créer une nouvelle route
 export const createRoute = (routeData) => {
-  return api.post('/routes', routeData);
+  return api.post('api/routes', routeData);
 };
 
 // Mettre à jour une route
 export const updateRoute = (id, routeData) => {
-  return api.put(`/routes/${id}`, routeData);
+  return api.put(`api/routes/${id}`, routeData);
 };
 
 // Mettre à jour le statut d'une route

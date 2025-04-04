@@ -28,7 +28,7 @@ api.interceptors.request.use(
 );
 
 // Intercepteur pour gérer les erreurs d'authentification et réseau
-api.interceptors.response.use(
+/*api.interceptors.response.use(
   response => {
     console.log('Réponse reçue:', response.status, response.config.url);
     return response;
@@ -53,6 +53,33 @@ api.interceptors.response.use(
       console.error('Erreur de configuration de la requête:', error.message);
     }
     
+    return Promise.reject(error);
+  }
+);*/
+api.interceptors.response.use(
+  response => {
+    console.log('Réponse reçue:', response.status, response.config.url);
+    return response;
+  },
+  error => {
+    if (error.response) {
+      console.error('Erreur détaillée:', {
+        status: error.response.status,
+        url: error.config.url,
+        method: error.config.method,
+        headers: error.config.headers,
+        data: error.response.data,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (error.response.status === 401) {
+        console.warn('⚠️ Détection token expiré - Redirection vers login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
+        window.location.href = '/login';
+      }
+    }
+    // Reste du code...
     return Promise.reject(error);
   }
 );
