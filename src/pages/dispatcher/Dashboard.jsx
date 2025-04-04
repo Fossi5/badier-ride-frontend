@@ -37,8 +37,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 // Importation des services API
-import { getAllRoutes, getRoutesByStatus } from '../../api/routes';
-import { getAllDeliveryPoints, getDeliveryPointsByStatus } from '../../api/deliveryPoints';
+import { getAllRoutes } from '../../api/routes';
+import { getAllDeliveryPoints } from '../../api/deliveryPoints';
 import { getAvailableDrivers } from '../../api/drivers';
 import { getDispatcherProfile } from '../../api/dispatchers';
 

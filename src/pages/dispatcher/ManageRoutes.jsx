@@ -391,24 +391,43 @@ const ManageRoutes = () => {
 const handleSubmit = async () => {
   if (!validateForm()) return;
   
-  console.log('--- DÉBUT SOUMISSION FORMULAIRE ---');
-  console.log('Données du formulaire:', formData);
-  console.log('État d\'authentification:', { 
-    token: localStorage.getItem('token') ? 'présent' : 'absent',
-    userRole: localStorage.getItem('userRole'),
-    currentUser
-  });
-  
   // S'assurer que le dispatcherId est défini pour un dispatcher
   let submissionData = { ...formData };
   
   if (currentUser?.role === 'DISPATCHER') {
-    const currentDispatcher = dispatchers.find(d => d.username === currentUser.username);
-    if (currentDispatcher) {
-      submissionData.dispatcherId = currentDispatcher.id;
-      console.log('Dispatcher ID défini automatiquement:', currentDispatcher.id);
+    if (submissionData.dispatcherId) {
+      console.log('Dispatcher ID déjà défini dans le formulaire:', submissionData.dispatcherId);
+    } 
+    else if (currentUser.username) {
+      console.log('Recherche dispatcher pour username:', currentUser.username);
+      const currentDispatcher = dispatchers.find(d => d.username === currentUser.username);
+      
+      if (currentDispatcher) {
+        submissionData.dispatcherId = currentDispatcher.id;
+        console.log('Dispatcher ID défini automatiquement:', currentDispatcher.id);
+      } 
+      else {
+        console.warn("Dispatcher non trouvé dans la liste avec username:", currentUser.username);
+        
+        // Fallback au premier dispatcher si aucun correspondant n'est trouvé
+        if (dispatchers.length > 0) {
+          submissionData.dispatcherId = dispatchers[0].id;
+          console.log('Dispatcher ID forcé au premier de la liste:', dispatchers[0].id);
+        } else {
+          error("Aucun dispatcher disponible. Veuillez contacter l'administrateur.");
+          setSubmitting(false);
+          return;
+        }
+      }
+    }
+    // Si aucun username n'est disponible, utiliser le premier dispatcher
+    else if (dispatchers.length > 0) {
+      submissionData.dispatcherId = dispatchers[0].id;
+      console.log('Dispatcher ID forcé au premier de la liste (aucun username):', dispatchers[0].id);
     } else {
-      console.warn('Dispatcher actuel non trouvé dans la liste!');
+      error("Aucun dispatcher disponible. Veuillez contacter l'administrateur.");
+      setSubmitting(false);
+      return;
     }
   }
   
@@ -427,22 +446,13 @@ const handleSubmit = async () => {
       success('Tournée mise à jour avec succès');
     }
     
-    console.log('Fermeture du dialogue et rafraîchissement des données');
     handleCloseRouteDialog();
     fetchData();
   } catch (err) {
-    console.error('--- ERREUR LORS DE LA SOUMISSION ---');
-    console.error('Type d\'erreur:', err.name);
-    console.error('Message:', err.message);
-    console.error('URL:', err.config?.url);
-    console.error('Méthode:', err.config?.method);
-    console.error('Statut:', err.response?.status);
-    console.error('Données de réponse:', err.response?.data);
-    
+    console.error('Erreur lors de la soumission:', err);
     error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée: ` + (err.response?.data?.error || err.message));
   } finally {
     setSubmitting(false);
-    console.log('--- FIN SOUMISSION FORMULAIRE ---');
   }
 };
   
