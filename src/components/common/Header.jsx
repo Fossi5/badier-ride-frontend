@@ -77,7 +77,8 @@ const Header = () => {
     { text: 'Tableau de bord', icon: <Dashboard />, path: '/admin/dashboard' },
     { text: 'Chauffeurs', icon: <DirectionsCar />, path: '/admin/drivers' },
     { text: 'Répartiteurs', icon: <People />, path: '/admin/dispatchers' },
-    { text: 'Adresses', icon: <LocationOnIcon />, path: '/admin/addresses' }, // Fixed icon
+   // { text: 'Adresses', icon: <LocationOnIcon />, path: '/admin/addresses' }, // Fixed icon
+    { text: 'Points de livraison', icon: <LocalShipping />, path: '/admin/delivery-points' },
   ];
   
   // Elements du tiroir de navigation pour le répartiteur

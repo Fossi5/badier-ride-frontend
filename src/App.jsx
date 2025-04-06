@@ -19,7 +19,8 @@ import Login from './pages/auth/Login';
 import AdminDashboard from './pages/admin/Dashboard';
 import ManageDrivers from './pages/admin/ManageDrivers';
 import ManageDispatchers from './pages/admin/ManageDispatchers';
-import ManageAddresses from './pages/admin/ManageAddresses';
+//import ManageAddresses from './pages/admin/ManageAddresses';
+
 // Pages répartiteur
 import DispatcherDashboard from './pages/dispatcher/Dashboard';
 import ManageRoutes from './pages/dispatcher/ManageRoutes';
@@ -70,7 +71,7 @@ function App() {
       <CssBaseline />
       <Router>
         <AlertProvider>
-          <AuthProvider>
+          <AuthProvider>a
             <Header />
             <AlertDisplay />
             <Routes>
@@ -85,7 +86,9 @@ function App() {
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="drivers" element={<ManageDrivers />} />
                 <Route path="dispatchers" element={<ManageDispatchers />} />
-                <Route path="addresses" element={<ManageAddresses />} /> 
+                 
+                
+                <Route path="delivery-points" element={<ManageDeliveryPoints />} />
               </Route>
               
               {/* Routes Dispatcher */}

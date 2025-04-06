@@ -29,7 +29,8 @@ import {
   AddCircle as AddIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
-  Report as ReportIcon
+  Report as ReportIcon,
+  LocationOn as LocationIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -132,11 +133,49 @@ const AdminDashboard = () => {
       route.startTime && route.startTime.startsWith(today)
     );
   };
+
+  // Récupérer les points de livraison récents
+  const getRecentDeliveryPoints = () => {
+    return [...deliveryPoints]
+      .sort((a, b) => new Date(b.plannedTime) - new Date(a.plannedTime))
+      .slice(0, 5);
+  };
   
   // Calcul des statistiques
   const stats = loading ? null : getStats();
   const todayRoutes = loading ? [] : getTodayRoutes();
+  const recentDeliveryPoints = loading ? [] : getRecentDeliveryPoints();
   
+  // Fonction pour obtenir la couleur selon le statut
+  const getDeliveryStatusColor = (status) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'success';
+      case 'IN_PROGRESS':
+        return 'warning';
+      case 'FAILED':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+  
+  // Fonction pour obtenir le texte du statut
+  const getDeliveryStatusText = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return 'En attente';
+      case 'IN_PROGRESS':
+        return 'En cours';
+      case 'COMPLETED':
+        return 'Terminé';
+      case 'FAILED':
+        return 'Échec';
+      default:
+        return status;
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -145,10 +184,12 @@ const AdminDashboard = () => {
         </Typography>
         
         <Tooltip title="Rafraîchir">
-          <IconButton onClick={fetchData} disabled={loading}>
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
+         <span>
+              <IconButton onClick={fetchData} disabled={loading} sx={{ mr: 1 }}>
+              <RefreshIcon />
+              </IconButton>
+         </span>
+       </Tooltip>
       </Box>
       
       {loading ? (
@@ -288,13 +329,14 @@ const AdminDashboard = () => {
                     </Typography>
                   </Box>
                   <Button
-                    variant="outlined"
+                    variant="contained"
+                    color="primary"
                     size="small"
                     fullWidth
                     sx={{ mt: 2 }}
-                    onClick={() => navigate('/dispatcher/delivery-points')}
+                    onClick={() => navigate('/admin/delivery-points')}
                   >
-                    Voir les livraisons
+                    Gérer les livraisons
                   </Button>
                 </CardContent>
               </Card>
@@ -376,60 +418,68 @@ const AdminDashboard = () => {
               </Paper>
             </Grid>
             
-            {/* Activité récente */}
+            {/* Points de livraison récents */}
             <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Dernières activités
+                  Points de livraison récents
                 </Typography>
                 <Divider sx={{ my: 2 }} />
                 
-                <List>
-                  {/* Ici, vous pourriez afficher un historique des activités récentes */}
-                  {/* Par exemple, les derniers changements de statut, connexions, etc. */}
-                  {/* Ces informations devraient venir d'une API que vous implémenterez côté backend */}
-                  <ListItem divider>
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: 'success.light' }}>
-                        <CheckCircleIcon />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary="Tournée terminée"
-                      secondary={`Tournée #${routes[0]?.id || '1'} terminée par ${routes[0]?.driver?.username || 'user'}`}
-                    />
-                  </ListItem>
-                  <ListItem divider>
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: 'primary.light' }}>
-                        <DriverIcon />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary="Chauffeur connecté"
-                      secondary={`${drivers[0]?.username || 'Chauffeur'} s'est connecté`}
-                    />
-                  </ListItem>
-                  <ListItem divider>
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: 'warning.light' }}>
-                        <SpeedIcon />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary="Tournée démarrée"
-                      secondary={`Tournée #${routes[1]?.id || '2'} démarrée par ${routes[1]?.driver?.username || 'user'}`}
-                    />
-                  </ListItem>
-                </List>
+                {recentDeliveryPoints.length === 0 ? (
+                  <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 2 }}>
+                    Aucun point de livraison récent
+                  </Typography>
+                ) : (
+                  <List>
+                    {recentDeliveryPoints.map((point) => (
+                      <ListItem
+                        key={point.id}
+                        divider
+                        secondaryAction={
+                          <Tooltip title="Voir détails">
+                            <IconButton
+                              edge="end"
+                              onClick={() => navigate(`/admin/delivery-points/${point.id}`)}
+                            >
+                              <LocationIcon />
+                            </IconButton>
+                          </Tooltip>
+                        }
+                      >
+                        <ListItemAvatar>
+                          <Avatar sx={{ bgcolor: getDeliveryStatusColor(point.deliveryStatus) + '.light' }}>
+                            <ShippingIcon />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={point.clientName}
+                          secondary={
+                            <>
+                              <Typography component="span" variant="body2">
+                                {point.address.street}, {point.address.postalCode} {point.address.city}
+                              </Typography>
+                              <br />
+                              <Typography component="span" variant="body2" color="textSecondary">
+                                {point.plannedTime && formatDate(point.plannedTime, 'datetime')} • 
+                                Statut: {getDeliveryStatusText(point.deliveryStatus)}
+                              </Typography>
+                            </>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
                 
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
                   <Button
-                    variant="outlined"
+                    variant="contained"
                     size="small"
-                    onClick={() => {/* Navigation vers un historique complet */}}
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate('/admin/delivery-points/create')}
                   >
-                    Voir tout l'historique
+                    Ajouter un point de livraison
                   </Button>
                 </Box>
               </Paper>
