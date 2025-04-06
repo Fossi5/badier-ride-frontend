@@ -19,7 +19,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   FormControl,
   InputLabel,
   Select,
@@ -39,10 +38,10 @@ import {
   Phone as PhoneIcon,
   Email as EmailIcon
 } from '@mui/icons-material';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { format } from 'date-fns';
+
+// Import du composant DeliveryPointForm modifié
+import DeliveryPointForm from '../../components/forms/DeliveryPointForm';
 
 // Import des services API
 import { 
@@ -53,14 +52,12 @@ import {
   deleteDeliveryPoint,
   updateDeliveryPointStatus
 } from '../../api/deliveryPoints';
-import { getAllAddresses } from '../../api/addresses';
 
 // Import du contexte d'alerte
 import { useAlert } from '../../context/AlertContext';
 
 const ManageDeliveryPoints = () => {
   const [deliveryPoints, setDeliveryPoints] = useState([]);
-  const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -70,18 +67,6 @@ const ManageDeliveryPoints = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('create');
   const [selectedDeliveryPoint, setSelectedDeliveryPoint] = useState(null);
-  const [formData, setFormData] = useState({
-    addressId: '',
-    clientName: '',
-    clientPhoneNumber: '',
-    clientEmail: '',
-    clientNote: '',
-    deliveryNote: '',
-    deliveryTime: new Date(),
-    deliveryDate: new Date().toISOString().split('T')[0],
-    deliveryStatus: 'PENDING'
-  });
-  const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   
   // État pour le dialogue de confirmation de suppression
@@ -109,7 +94,7 @@ const ManageDeliveryPoints = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      await Promise.all([fetchAllDeliveryPoints(), fetchAddresses()]);
+      await fetchAllDeliveryPoints();
     } catch (err) {
       error('Erreur lors du chargement des données: ' + (err.response?.data?.error || err.message));
       console.error('Erreur:', err);
@@ -144,19 +129,6 @@ const ManageDeliveryPoints = () => {
     }
   };
   
-  // Fonction pour charger les adresses
-  const fetchAddresses = async () => {
-    try {
-      const response = await getAllAddresses();
-      setAddresses(response.data);
-      return response.data;
-    } catch (err) {
-      error('Erreur lors du chargement des adresses: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
-      return [];
-    }
-  };
-
   // Gestion du changement de page
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -176,37 +148,35 @@ const ManageDeliveryPoints = () => {
   // Ouverture du dialogue pour créer un nouveau point de livraison
   const handleOpenCreateDialog = () => {
     setDialogMode('create');
-    setFormData({
-      addressId: '',
-      clientName: '',
-      clientPhoneNumber: '',
-      clientEmail: '',
-      clientNote: '',
-      deliveryNote: '',
-      deliveryTime: new Date(),
-      deliveryDate: new Date().toISOString().split('T')[0],
-      deliveryStatus: 'PENDING'
-    });
-    setFormErrors({});
+    setSelectedDeliveryPoint(null);
     setOpenDialog(true);
   };
   
   // Ouverture du dialogue pour éditer un point de livraison existant
   const handleOpenEditDialog = (deliveryPoint) => {
     setDialogMode('edit');
-    setSelectedDeliveryPoint(deliveryPoint);
-    setFormData({
-      addressId: deliveryPoint.address.id,
+    setSelectedDeliveryPoint({
+      ...deliveryPoint,
+      // Formatage des données pour le formulaire
       clientName: deliveryPoint.clientName,
       clientPhoneNumber: deliveryPoint.clientPhoneNumber || '',
       clientEmail: deliveryPoint.clientEmail || '',
       clientNote: deliveryPoint.clientNote || '',
       deliveryNote: deliveryPoint.deliveryNote || '',
       deliveryTime: deliveryPoint.deliveryTime ? new Date(deliveryPoint.deliveryTime) : new Date(),
-      deliveryDate: deliveryPoint.deliveryDate || new Date().toISOString().split('T')[0],
-      deliveryStatus: deliveryPoint.deliveryStatus
+      deliveryStatus: deliveryPoint.deliveryStatus,
+      // Ajout des données d'adresse
+      address: {
+        id: deliveryPoint.address.id,
+        street: deliveryPoint.address.street,
+        city: deliveryPoint.address.city,
+        postalCode: deliveryPoint.address.postalCode,
+        country: deliveryPoint.address.country,
+        latitude: deliveryPoint.address.latitude,
+        longitude: deliveryPoint.address.longitude,
+        isVerified: deliveryPoint.address.isVerified
+      }
     });
-    setFormErrors({});
     setOpenDialog(true);
   };
   
@@ -216,80 +186,18 @@ const ManageDeliveryPoints = () => {
     setSelectedDeliveryPoint(null);
   };
   
-  // Gestion des changements de champs du formulaire
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-    
-    // Effacer l'erreur quand l'utilisateur modifie le champ
-    if (formErrors[name]) {
-      setFormErrors({
-        ...formErrors,
-        [name]: null
-      });
-    }
-  };
-  
-  // Gestion des changements de dates
-  const handleDateChange = (date) => {
-    setFormData({
-      ...formData,
-      deliveryTime: date
-    });
-    
-    // Effacer l'erreur quand l'utilisateur modifie le champ
-    if (formErrors.deliveryTime) {
-      setFormErrors({
-        ...formErrors,
-        deliveryTime: null
-      });
-    }
-  };
-  
-  // Validation du formulaire
-  const validateForm = () => {
-    const errors = {};
-    
-    if (!formData.addressId) {
-      errors.addressId = 'Veuillez sélectionner une adresse';
-    }
-    
-    if (!formData.clientName) {
-      errors.clientName = 'Le nom du client est obligatoire';
-    }
-    
-    if (!formData.deliveryTime) {
-      errors.deliveryTime = 'La date et heure de livraison sont obligatoires';
-    }
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-  
-  // Soumission du formulaire
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
-    
+  // Soumission du formulaire via le composant DeliveryPointForm
+  const handleSubmitDeliveryPoint = async (formData) => {
     setSubmitting(true);
     
     try {
-      // Formatage de la date pour l'API
-      const formattedDate = format(formData.deliveryTime, "yyyy-MM-dd'T'HH:mm:ss");
-      const deliveryPointData = {
-        ...formData,
-        deliveryTime: formattedDate
-      };
-      
       if (dialogMode === 'create') {
         // Création d'un nouveau point de livraison
-        await createDeliveryPoint(deliveryPointData);
+        await createDeliveryPoint(formData);
         success('Point de livraison créé avec succès');
       } else {
         // Mise à jour d'un point de livraison existant
-        await updateDeliveryPoint(selectedDeliveryPoint.id, deliveryPointData);
+        await updateDeliveryPoint(selectedDeliveryPoint.id, formData);
         success('Point de livraison mis à jour avec succès');
       }
       
@@ -578,157 +486,16 @@ const ManageDeliveryPoints = () => {
         <Divider />
         
         <DialogContent>
-          <Box component="form" sx={{ mt: 1 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <FormControl fullWidth required error={!!formErrors.addressId}>
-                  <InputLabel id="address-label">Adresse</InputLabel>
-                  <Select
-                    labelId="address-label"
-                    id="addressId"
-                    name="addressId"
-                    value={formData.addressId}
-                    onChange={handleFormChange}
-                    label="Adresse"
-                    disabled={submitting}
-                  >
-                    {addresses.map((address) => (
-                      <MenuItem key={address.id} value={address.id}>
-                        {formatAddress(address)}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formErrors.addressId && (
-                    <Typography variant="caption" color="error">
-                      {formErrors.addressId}
-                    </Typography>
-                  )}
-                </FormControl>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  required
-                  fullWidth
-                  id="clientName"
-                  label="Nom du client"
-                  name="clientName"
-                  value={formData.clientName}
-                  onChange={handleFormChange}
-                  error={!!formErrors.clientName}
-                  helperText={formErrors.clientName}
-                  disabled={submitting}
-                />
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  id="clientPhoneNumber"
-                  label="Numéro de téléphone"
-                  name="clientPhoneNumber"
-                  value={formData.clientPhoneNumber}
-                  onChange={handleFormChange}
-                  disabled={submitting}
-                />
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  id="clientEmail"
-                  label="Email du client"
-                  name="clientEmail"
-                  type="email"
-                  value={formData.clientEmail}
-                  onChange={handleFormChange}
-                  disabled={submitting}
-                />
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DateTimePicker
-                    label="Date et heure de livraison"
-                    value={formData.deliveryTime}
-                    onChange={handleDateChange}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        required: true,
-                        error: !!formErrors.deliveryTime,
-                        helperText: formErrors.deliveryTime,
-                        disabled: submitting
-                      }
-                    }}
-                  />
-                </LocalizationProvider>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel id="status-label">Statut</InputLabel>
-                  <Select
-                    labelId="status-label"
-                    id="deliveryStatus"
-                    name="deliveryStatus"
-                    value={formData.deliveryStatus}
-                    onChange={handleFormChange}
-                    label="Statut"
-                    disabled={submitting}
-                  >
-                    <MenuItem value="PENDING">En attente</MenuItem>
-                    <MenuItem value="IN_PROGRESS">En cours</MenuItem>
-                    <MenuItem value="COMPLETED">Terminé</MenuItem>
-                    <MenuItem value="FAILED">Échec</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  id="clientNote"
-                  label="Note du client"
-                  name="clientNote"
-                  value={formData.clientNote}
-                  onChange={handleFormChange}
-                  multiline
-                  rows={2}
-                  disabled={submitting}
-                />
-              </Grid>
-              
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  id="deliveryNote"
-                  label="Note de livraison"
-                  name="deliveryNote"
-                  value={formData.deliveryNote}
-                  onChange={handleFormChange}
-                  multiline
-                  rows={2}
-                  disabled={submitting}
-                />
-              </Grid>
-            </Grid>
-          </Box>
+          {/* Utilisation du composant DeliveryPointForm modifié */}
+          <DeliveryPointForm
+            initialData={selectedDeliveryPoint}
+            onSubmit={handleSubmitDeliveryPoint}
+            onCancel={handleCloseDialog}
+            submitting={submitting}
+          />
         </DialogContent>
         
-        <DialogActions>
-          <Button onClick={handleCloseDialog} disabled={submitting}>
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            variant="contained"
-            startIcon={submitting ? <CircularProgress size={20} /> : null}
-            disabled={submitting}
-          >
-            {dialogMode === 'create' ? 'Créer' : 'Mettre à jour'}
-          </Button>
-        </DialogActions>
+        {/* Nous n'avons plus besoin des DialogActions car les boutons sont déjà inclus dans le DeliveryPointForm */}
       </Dialog>
       
       {/* Dialogue de confirmation de suppression */}

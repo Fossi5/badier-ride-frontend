@@ -20,7 +20,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
     street: '',
     city: '',
     postalCode: '',
-    country: 'France', // Default value
+    country: 'Belgique', // Default value
     latitude: '',
     longitude: '',
     isVerified: false,
@@ -37,7 +37,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
         street: '',
         city: '',
         postalCode: '',
-        country: 'France',
+        country: 'Belgique',
         latitude: '',
         longitude: '',
         isVerified: false,
@@ -237,7 +237,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             error={!!formErrors.country}
             helperText={formErrors.country}
             disabled={submitting}
-            placeholder="France"
+            placeholder="Belgique"
           />
         </Grid>
 

@@ -36,6 +36,7 @@ import DeliveryMap from '../../components/maps/DeliveryMap';
 const DriverDashboard = () => {
   const [routes, setRoutes] = useState([]);
   const [activeRoute, setActiveRoute] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [driverInfo, setDriverInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -73,6 +74,7 @@ const DriverDashboard = () => {
       }
       
       setLoading(false);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors du chargement des données');
       setLoading(false);
@@ -89,6 +91,7 @@ const DriverDashboard = () => {
       
       // Recharger les données
       await fetchData();
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors de la mise à jour du statut');
     } finally {
@@ -107,6 +110,7 @@ const DriverDashboard = () => {
       
       // Recharger les données
       await fetchData();
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors du démarrage de la tournée');
     } finally {
@@ -125,6 +129,7 @@ const DriverDashboard = () => {
       
       // Recharger les données
       await fetchData();
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors de la clôture de la tournée');
     } finally {
@@ -150,6 +155,7 @@ const DriverDashboard = () => {
       await updateDriverAvailability(newAvailability);
       setIsAvailable(newAvailability);
       success(`Statut mis à jour: ${newAvailability ? 'Disponible' : 'Indisponible'}`);
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors de la mise à jour de la disponibilité');
       // Remettre l'ancien état en cas d'erreur
