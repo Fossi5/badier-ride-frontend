@@ -65,3 +65,36 @@ export const optimizeRoute = (routeId) => {
 export const getRouteDistance = (routeId) => {
   return api.get(`/routes/${routeId}/distance`);
 };
+
+/**
+ * Mettre à jour l'ordre des points de livraison d'une tournée
+ * @param {number} routeId - ID de la tournée
+ * @param {Array} orderedPoints - Liste des points ordonnés avec propriétés id, sequenceOrder, isStartPoint, isEndPoint
+ * @returns {Promise} - Réponse de l'API
+ */
+export const updateRoutePointsOrder = async (routeId, orderedPoints) => {
+  try {
+    const response = await api.put(`/routes/${routeId}/delivery-points/order`, { 
+      orderedPoints 
+    });
+    return response;
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'ordre des points de livraison:', error);
+    throw error;
+  }
+};
+
+/**
+ * Optimiser une tournée tout en respectant les points de départ et d'arrivée définis
+ * @param {number} routeId - ID de la tournée
+ * @returns {Promise} - Réponse de l'API
+ */
+export const optimizeRouteWithFixedPoints = async (routeId) => {
+  try {
+    const response = await api.post(`/routes/optimization/${routeId}/with-fixed-points`);
+    return response;
+  } catch (error) {
+    console.error('Erreur lors de l\'optimisation de la tournée avec points fixes:', error);
+    throw error;
+  }
+};
