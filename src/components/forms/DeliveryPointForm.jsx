@@ -238,7 +238,7 @@ const DeliveryPointForm = ({ initialData, onSubmit, onCancel, submitting }) => {
   // Validation du numéro de téléphone (format belge)
   const validatePhoneNumber = (phone) => {
     // Format belge: peut commencer par 0 ou +32
-    return /^(\+32|0)[1-9]([-. ]?[0-9]{2}){3}$/.test(phone);
+    return /^(\+32|0)[1-9]([-. ]?[0-9]{2}){4}$/.test(phone);
   };
 
   // Soumission du formulaire
