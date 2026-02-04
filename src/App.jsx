@@ -53,7 +53,7 @@ const theme = createTheme({
 // Fonction pour vérifier le rôle et rediriger vers le tableau de bord approprié
 const RoleBasedRedirect = () => {
   const userRole = localStorage.getItem('userRole');
-  
+
   if (userRole === 'ADMIN') {
     return <Navigate to="/admin/dashboard" />;
   } else if (userRole === 'DISPATCHER') {
@@ -71,26 +71,26 @@ function App() {
       <CssBaseline />
       <Router>
         <AlertProvider>
-          <AuthProvider>a
+          <AuthProvider>
             <Header />
             <AlertDisplay />
             <Routes>
               {/* Route publique */}
               <Route path="/login" element={<Login />} />
-              
+
               {/* Redirection basée sur le rôle */}
               <Route path="/" element={<RoleBasedRedirect />} />
-              
+
               {/* Routes Admin */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="drivers" element={<ManageDrivers />} />
                 <Route path="dispatchers" element={<ManageDispatchers />} />
-                 
-                
+
+
                 <Route path="delivery-points" element={<ManageDeliveryPoints />} />
               </Route>
-              
+
               {/* Routes Dispatcher */}
               <Route path="/dispatcher" element={<ProtectedRoute allowedRoles={['DISPATCHER']} />}>
                 <Route path="dashboard" element={<DispatcherDashboard />} />
@@ -98,13 +98,13 @@ function App() {
                 <Route path="optimize" element={<RouteOptimization />} />
                 <Route path="delivery-points" element={<ManageDeliveryPoints />} />
               </Route>
-              
+
               {/* Routes Driver */}
               <Route path="/driver" element={<ProtectedRoute allowedRoles={['DRIVER']} />}>
                 <Route path="dashboard" element={<DriverDashboard />} />
                 <Route path="route/:id" element={<RouteDetails />} />
               </Route>
-              
+
               {/* Route par défaut - redirection vers la page de connexion */}
               <Route path="*" element={<Navigate to="/login" />} />
             </Routes>
