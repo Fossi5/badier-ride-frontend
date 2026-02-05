@@ -364,8 +364,8 @@ const AdminDashboard = () => {
                         divider
                         secondaryAction={
                           <IconButton
-                            edge="end"
-                            onClick={() => navigate(`/dispatcher/routes/${route.id}`)}
+                            edge="end"disabled
+                           // onClick={() => navigate(`/dispatcher/routes/${route.id}`)}
                           >
                             {route.status === 'COMPLETED' ? (
                               <CheckCircleIcon color="success" />
@@ -405,16 +405,7 @@ const AdminDashboard = () => {
                   </List>
                 )}
                 
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => navigate('/dispatcher/routes/create')}
-                  >
-                    Ajouter une tournée
-                  </Button>
-                </Box>
+                
               </Paper>
             </Grid>
             
@@ -472,16 +463,7 @@ const AdminDashboard = () => {
                   </List>
                 )}
                 
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => navigate('/admin/delivery-points/create')}
-                  >
-                    Ajouter un point de livraison
-                  </Button>
-                </Box>
+                
               </Paper>
             </Grid>
           </Grid>
