@@ -15,18 +15,24 @@ export const isValidEmail = (email) => {
   
   /**
    * Validateur de numéro de téléphone français
-   * @param {string} phone - Numéro à valider
-   * @returns {boolean} Indique si le numéro est valide
-   */
-  export const isValidPhone = (phone) => {
-    if (!phone) return false;
-    
-    // Supprime tous les caractères non numériques
-    const digits = phone.replace(/\D/g, '');
-    
-    // Vérifie si le numéro commence par 0 et contient 10 chiffres (format français)
-    return digits.length === 10 && digits.startsWith('0');
-  };
+  /**
+ * @param {string} phone - Numéro à valider
+ * @returns {boolean} Indique si le numéro est valide
+ */
+export const isValidPhone = (phone) => {
+  if (!phone) return false;
+
+  // Supprime tout sauf les chiffres
+  let digits = phone.replace(/\D/g, '');
+
+  // Si format international belge (+32), on normalise
+  if (digits.startsWith('32')) {
+    digits = '0' + digits.slice(2);
+  }
+
+  // Format belge national : 0XXXXXXXXX (10 chiffres)
+  return digits.length === 10 && digits.startsWith('0');
+};
   
   /**
    * Validateur de code postal français
