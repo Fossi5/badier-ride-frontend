@@ -1,6 +1,6 @@
 // src/components/maps/DeliveryMap.jsx
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -11,15 +11,18 @@ import {
   CircularProgress,
   SpeedDial,
   SpeedDialAction,
-  SpeedDialIcon
+  SpeedDialIcon,
+  Fab
 } from '@mui/material';
 import DirectionsIcon from '@mui/icons-material/Directions';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import NavigationIcon from '@mui/icons-material/Navigation';
 import MapIcon from '@mui/icons-material/Map';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { geocodeAddress, calculateRoute } from '../../utils/geocoding';
 import { isMobileDevice, isIOS, openNavigation } from '../../utils/navigationUtils';
+import { createColoredRouteSegments } from '../../utils/mapUtils';
 
 // Correction des icônes Leaflet pour React
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -117,6 +120,24 @@ const LocationMarker = ({ onLocationUpdate, onPositionChange }) => {
   );
 };
 
+// Composant pour recentrer la carte sur la position du chauffeur
+const RecenterControl = ({ driverPosition }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    // Exposer la fonction de recentrage
+    if (driverPosition) {
+      map._recenterOnDriver = () => {
+        map.flyTo(driverPosition, 15, {
+          duration: 1
+        });
+      };
+    }
+  }, [driverPosition, map]);
+
+  return null;
+};
+
 const DeliveryMap = ({
   route,
   onStatusUpdate,
@@ -130,6 +151,9 @@ const DeliveryMap = ({
   const [geocoding, setGeocoding] = useState(false);
   const [routeGeometry, setRouteGeometry] = useState(null); // Itinéraire calculé
   const [routeInfo, setRouteInfo] = useState(null); // Distance et durée
+  const [routeSegments, setRouteSegments] = useState([]); // Segments colorés pour l'itinéraire calculé
+  const [fallbackSegments, setFallbackSegments] = useState([]); // Segments colorés pour ligne directe
+  const [mapInstance, setMapInstance] = useState(null);
 
   useEffect(() => {
     if (!route || !route.deliveryPoints) {
@@ -184,8 +208,17 @@ const DeliveryMap = ({
             distance: routeResult.distance,
             duration: routeResult.duration
           });
+
+          // Créer les segments colorés pour l'itinéraire calculé
+          const segments = createColoredRouteSegments(routeResult.coordinates);
+          setRouteSegments(segments);
         }
       }
+
+      // Créer les segments colorés pour la ligne de secours (directe)
+      const fallbackPositions = points.map(p => p.position);
+      const fallbackSegs = createColoredRouteSegments(fallbackPositions);
+      setFallbackSegments(fallbackSegs);
 
       // Calculer le centre et le zoom de la carte
       if (points.length > 0) {
@@ -235,7 +268,16 @@ const DeliveryMap = ({
             distance: routeResult.distance,
             duration: routeResult.duration
           });
+
+          // Créer les segments colorés pour l'itinéraire calculé avec le chauffeur
+          const segments = createColoredRouteSegments(routeResult.coordinates);
+          setRouteSegments(segments);
         }
+
+        // Mettre à jour aussi les segments de secours
+        const fallbackPositions = [driverPosition, ...routePoints.map(p => p.position)];
+        const fallbackSegs = createColoredRouteSegments(fallbackPositions);
+        setFallbackSegments(fallbackSegs);
       }
     };
 
@@ -260,6 +302,15 @@ const DeliveryMap = ({
   const handleStatusUpdate = (pointId, newStatus) => {
     if (onStatusUpdate) {
       onStatusUpdate(pointId, newStatus);
+    }
+  };
+
+  // Fonction pour recentrer sur la position du chauffeur
+  const handleRecenterOnDriver = () => {
+    if (driverPosition && mapInstance) {
+      mapInstance.flyTo(driverPosition, 15, {
+        duration: 1
+      });
     }
   };
 
@@ -297,32 +348,48 @@ const DeliveryMap = ({
         center={center}
         zoom={zoom}
         style={{ height: '100%', width: '100%' }}
+        ref={(map) => {
+          if (map) setMapInstance(map);
+        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Tracer l'itinéraire routier calculé (inclut la position du chauffeur si disponible) */}
-        {routeGeometry && routeGeometry.length > 1 && (
-          <Polyline
-            positions={routeGeometry}
-            color="#1976d2"
-            weight={5}
-            opacity={0.8}
-            lineJoin="round"
-          />
+        {/* Contrôle pour recentrer sur le chauffeur */}
+        <RecenterControl driverPosition={driverPosition} />
+
+        {/* Tracer l'itinéraire routier calculé avec segments colorés */}
+        {routeGeometry && routeGeometry.length > 1 && routeSegments.length > 0 && (
+          <>
+            {routeSegments.map((segment, index) => (
+              <Polyline
+                key={`route-segment-${index}`}
+                positions={segment.positions}
+                color={segment.color}
+                weight={5}
+                opacity={0.8}
+                lineJoin="round"
+              />
+            ))}
+          </>
         )}
 
-        {/* Si pas d'itinéraire calculé, afficher ligne droite de secours */}
-        {!routeGeometry && routePoints.length > 1 && (
-          <Polyline
-            positions={routePoints.map(p => p.position)}
-            color="#ff9800"
-            weight={4}
-            opacity={0.6}
-            dashArray="5, 10"
-          />
+        {/* Si pas d'itinéraire calculé, afficher ligne droite de secours avec segments colorés */}
+        {!routeGeometry && routePoints.length > 1 && fallbackSegments.length > 0 && (
+          <>
+            {fallbackSegments.map((segment, index) => (
+              <Polyline
+                key={`fallback-segment-${index}`}
+                positions={segment.positions}
+                color={segment.color}
+                weight={4}
+                opacity={0.6}
+                dashArray="5, 10"
+              />
+            ))}
+          </>
         )}
 
         {/* Marqueur de localisation du chauffeur */}
@@ -494,6 +561,23 @@ const DeliveryMap = ({
             />
           ))}
         </SpeedDial>
+      )}
+
+      {/* Bouton pour recentrer sur la position du chauffeur */}
+      {driverPosition && (
+        <Fab
+          color="secondary"
+          aria-label="recentrer sur ma position"
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            right: 16,
+            boxShadow: 3
+          }}
+          onClick={handleRecenterOnDriver}
+        >
+          <MyLocationIcon />
+        </Fab>
       )}
     </Box>
   );

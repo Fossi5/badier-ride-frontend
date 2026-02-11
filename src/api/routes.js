@@ -1,9 +1,9 @@
 // src/api/routes.js
-import api from './axios';
+import api from "./axios";
 
 // Récupérer toutes les routes
 export const getAllRoutes = () => {
-  return api.get('/routes');
+  return api.get("/routes");
 };
 
 // Récupérer une route spécifique
@@ -18,7 +18,7 @@ export const getRoutesByStatus = (status) => {
 
 // Récupérer les routes pour un chauffeur connecté
 export const getDriverRoutes = () => {
-  return api.get('/routes/driver');
+  return api.get("/routes/driver");
 };
 
 // Récupérer les routes pour un dispatcher
@@ -28,7 +28,7 @@ export const getRoutesByDispatcher = (dispatcherId) => {
 
 // Créer une nouvelle route
 export const createRoute = (routeData) => {
-  return api.post('/routes', routeData);
+  return api.post("/routes", routeData);
 };
 
 // Mettre à jour une route
@@ -56,14 +56,19 @@ export const removeDeliveryPointFromRoute = (routeId, deliveryPointId) => {
   return api.delete(`/routes/${routeId}/delivery-points/${deliveryPointId}`);
 };
 
-// Optimiser une route
+// Optimiser une route (optimisation libre - ignore les points de départ/arrivée)
 export const optimizeRoute = (routeId) => {
-  return api.post(`/routes/${routeId}/optimize`);
+  return api.post(`/routes/optimization/${routeId}`);
+};
+
+// Optimiser une route en respectant les points de départ et d'arrivée définis
+export const optimizeRouteWithFixedPoints = (routeId) => {
+  return api.post(`/routes/optimization/${routeId}/with-fixed-points`);
 };
 
 // Obtenir la distance totale d'une route
 export const getRouteDistance = (routeId) => {
-  return api.get(`/routes/${routeId}/distance`);
+  return api.get(`/routes/optimization/${routeId}/distance`);
 };
 
 /**
@@ -74,27 +79,15 @@ export const getRouteDistance = (routeId) => {
  */
 export const updateRoutePointsOrder = async (routeId, orderedPoints) => {
   try {
-    const response = await api.put(`/routes/${routeId}/delivery-points/order`, { 
-      orderedPoints 
+    const response = await api.put(`/routes/${routeId}/delivery-points/order`, {
+      orderedPoints,
     });
     return response;
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'ordre des points de livraison:', error);
-    throw error;
-  }
-};
-
-/**
- * Optimiser une tournée tout en respectant les points de départ et d'arrivée définis
- * @param {number} routeId - ID de la tournée
- * @returns {Promise} - Réponse de l'API
- */
-export const optimizeRouteWithFixedPoints = async (routeId) => {
-  try {
-    const response = await api.post(`/routes/optimization/${routeId}/with-fixed-points`);
-    return response;
-  } catch (error) {
-    console.error('Erreur lors de l\'optimisation de la tournée avec points fixes:', error);
+    console.error(
+      "Erreur lors de la mise à jour de l'ordre des points de livraison:",
+      error,
+    );
     throw error;
   }
 };

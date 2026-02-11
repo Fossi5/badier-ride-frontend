@@ -62,13 +62,12 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
         getAllDispatchers(),
         getAllDeliveryPoints()
       ]);
-      
+
       setDrivers(driversRes.data);
       setDispatchers(dispatchersRes.data);
-      setDeliveryPoints(deliveryPointsRes.data.filter(dp => 
-        dp.deliveryStatus !== 'COMPLETED' && dp.deliveryStatus !== 'FAILED'
-      ));
-      
+      // Tous les points de livraison sont maintenant disponibles car le statut est par tournée
+      setDeliveryPoints(deliveryPointsRes.data);
+
       // Préremplir l'ID du dispatcher si l'utilisateur est un dispatcher
       if (currentUser?.role === 'DISPATCHER' && !initialData?.dispatcherId) {
         const currentDispatcher = dispatchersRes.data.find(d => d.username === currentUser.username);
@@ -94,7 +93,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
       ...formData,
       [name]: value
     });
-    
+
     // Effacer l'erreur quand l'utilisateur modifie le champ
     if (formErrors[name]) {
       setFormErrors({
@@ -103,14 +102,14 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
       });
     }
   };
-  
+
   // Gestion des changements de dates
   const handleDateChange = (name, date) => {
     setFormData({
       ...formData,
       [name]: date
     });
-    
+
     // Effacer l'erreur quand l'utilisateur modifie le champ
     if (formErrors[name]) {
       setFormErrors({
@@ -119,31 +118,31 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
       });
     }
   };
-  
+
   // Validation du formulaire
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData.name) {
       errors.name = 'Le nom de la tournée est obligatoire';
     }
-    
+
     if (!formData.driverId) {
       errors.driverId = 'Veuillez sélectionner un chauffeur';
     }
-    
+
     if (!formData.dispatcherId) {
       errors.dispatcherId = 'Veuillez sélectionner un répartiteur';
     }
-    
+
     if (!formData.deliveryPointIds || formData.deliveryPointIds.length === 0) {
       errors.deliveryPointIds = 'Veuillez sélectionner au moins un point de livraison';
     }
-    
+
     if (!formData.startTime) {
       errors.startTime = 'La date et heure de début sont obligatoires';
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -179,7 +178,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             disabled={submitting}
           />
         </Grid>
-        
+
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth required error={!!formErrors.driverId}>
             <InputLabel id="driver-label">Chauffeur</InputLabel>
@@ -194,7 +193,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             >
               {drivers.map((driver) => (
                 <MenuItem key={driver.id} value={driver.id}>
-                  {driver.username} 
+                  {driver.username}
                   {driver.vehicleType && ` - ${driver.vehicleType}`}
                 </MenuItem>
               ))}
@@ -206,7 +205,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             )}
           </FormControl>
         </Grid>
-        
+
         <Grid item xs={12} sm={6}>
           <FormControl fullWidth required error={!!formErrors.dispatcherId}>
             <InputLabel id="dispatcher-label">Répartiteur</InputLabel>
@@ -221,7 +220,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             >
               {dispatchers.map((dispatcher) => (
                 <MenuItem key={dispatcher.id} value={dispatcher.id}>
-                  {dispatcher.username} 
+                  {dispatcher.username}
                   {dispatcher.department && ` - ${dispatcher.department}`}
                 </MenuItem>
               ))}
@@ -233,7 +232,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             )}
           </FormControl>
         </Grid>
-        
+
         <Grid item xs={12}>
           <FormControl fullWidth required error={!!formErrors.deliveryPointIds}>
             <InputLabel id="delivery-points-label">Points de livraison</InputLabel>
@@ -251,10 +250,10 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
                   {selected.map((value) => {
                     const deliveryPoint = deliveryPoints.find(dp => dp.id === value);
                     return (
-                      <Chip 
-                        key={value} 
-                        label={deliveryPoint ? deliveryPoint.clientName : value} 
-                        size="small" 
+                      <Chip
+                        key={value}
+                        label={deliveryPoint ? deliveryPoint.clientName : value}
+                        size="small"
                       />
                     );
                   })}
@@ -274,7 +273,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             )}
           </FormControl>
         </Grid>
-        
+
         <Grid item xs={12} sm={6}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DateTimePicker
@@ -293,7 +292,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             />
           </LocalizationProvider>
         </Grid>
-        
+
         <Grid item xs={12} sm={6}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DateTimePicker
@@ -311,7 +310,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             />
           </LocalizationProvider>
         </Grid>
-        
+
         <Grid item xs={12}>
           <FormControl fullWidth>
             <InputLabel id="status-label">Statut</InputLabel>
@@ -331,7 +330,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             </Select>
           </FormControl>
         </Grid>
-        
+
         <Grid item xs={12}>
           <TextField
             fullWidth
@@ -345,16 +344,16 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
             disabled={submitting}
           />
         </Grid>
-        
+
         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-          <Button 
+          <Button
             onClick={onCancel}
             disabled={submitting}
             sx={{ mr: 2 }}
           >
             Annuler
           </Button>
-          <Button 
+          <Button
             onClick={handleSubmit}
             variant="contained"
             startIcon={submitting ? <CircularProgress size={20} /> : null}

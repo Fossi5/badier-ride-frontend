@@ -44,13 +44,12 @@ import { format } from 'date-fns';
 import DeliveryPointForm from '../../components/forms/DeliveryPointForm';
 
 // Import des services API
-import { 
-  getAllDeliveryPoints, 
-  getDeliveryPointsByStatus, 
-  createDeliveryPoint, 
-  updateDeliveryPoint, 
-  deleteDeliveryPoint,
-  updateDeliveryPointStatus
+import {
+  getAllDeliveryPoints,
+  getDeliveryPointsByStatus,
+  createDeliveryPoint,
+  updateDeliveryPoint,
+  deleteDeliveryPoint
 } from '../../api/deliveryPoints';
 
 // Import du contexte d'alerte
@@ -62,25 +61,25 @@ const ManageDeliveryPoints = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [statusFilter, setStatusFilter] = useState('');
-  
+
   // États pour le dialogue de création/édition
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('create');
   const [selectedDeliveryPoint, setSelectedDeliveryPoint] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  
+
   // État pour le dialogue de confirmation de suppression
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [pointToDelete, setPointToDelete] = useState(null);
-  
+
   // Hooks et contextes
   const { success, error } = useAlert();
-  
+
   // Charger les données au montage du composant
   useEffect(() => {
     fetchData();
   }, []);
-  
+
   // Effet pour filtrer les points de livraison par statut
   useEffect(() => {
     if (statusFilter) {
@@ -89,7 +88,7 @@ const ManageDeliveryPoints = () => {
       fetchAllDeliveryPoints();
     }
   }, [statusFilter]);
-  
+
   // Fonction pour charger toutes les données nécessaires
   const fetchData = async () => {
     setLoading(true);
@@ -102,7 +101,7 @@ const ManageDeliveryPoints = () => {
       setLoading(false);
     }
   };
-  
+
   // Fonction pour charger tous les points de livraison
   const fetchAllDeliveryPoints = async () => {
     try {
@@ -115,7 +114,7 @@ const ManageDeliveryPoints = () => {
       return [];
     }
   };
-  
+
   // Fonction pour charger les points de livraison par statut
   const fetchDeliveryPointsByStatus = async (status) => {
     try {
@@ -128,30 +127,30 @@ const ManageDeliveryPoints = () => {
       return [];
     }
   };
-  
+
   // Gestion du changement de page
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
-  
+
   // Gestion du changement de nombre de lignes par page
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-  
+
   // Gestion du changement de filtre par statut
   const handleStatusFilterChange = (event) => {
     setStatusFilter(event.target.value);
   };
-  
+
   // Ouverture du dialogue pour créer un nouveau point de livraison
   const handleOpenCreateDialog = () => {
     setDialogMode('create');
     setSelectedDeliveryPoint(null);
     setOpenDialog(true);
   };
-  
+
   // Ouverture du dialogue pour éditer un point de livraison existant
   const handleOpenEditDialog = (deliveryPoint) => {
     setDialogMode('edit');
@@ -179,17 +178,17 @@ const ManageDeliveryPoints = () => {
     });
     setOpenDialog(true);
   };
-  
+
   // Fermeture du dialogue
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedDeliveryPoint(null);
   };
-  
+
   // Soumission du formulaire via le composant DeliveryPointForm
   const handleSubmitDeliveryPoint = async (formData) => {
     setSubmitting(true);
-    
+
     try {
       if (dialogMode === 'create') {
         // Création d'un nouveau point de livraison
@@ -200,7 +199,7 @@ const ManageDeliveryPoints = () => {
         await updateDeliveryPoint(selectedDeliveryPoint.id, formData);
         success('Point de livraison mis à jour avec succès');
       }
-      
+
       // Fermer le dialogue et rafraîchir la liste
       handleCloseDialog();
       fetchData();
@@ -211,39 +210,31 @@ const ManageDeliveryPoints = () => {
       setSubmitting(false);
     }
   };
-  
-  // Mise à jour du statut d'un point de livraison
-  const handleUpdateStatus = async (id, newStatus) => {
-    try {
-      await updateDeliveryPointStatus(id, newStatus);
-      success(`Statut du point de livraison mis à jour: ${newStatus}`);
-      fetchData();
-    } catch (err) {
-      error('Erreur lors de la mise à jour du statut: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
-    }
-  };
-  
+
+  // Note: La mise à jour du statut n'est plus disponible ici car le statut est maintenant
+  // par tournée (RouteDeliveryPoint) et non global. Les chauffeurs mettent à jour
+  // le statut depuis leur interface de tournée.
+
   // Ouverture du dialogue de confirmation de suppression
   const handleOpenDeleteDialog = (deliveryPoint) => {
     setPointToDelete(deliveryPoint);
     setOpenDeleteDialog(true);
   };
-  
+
   // Fermeture du dialogue de confirmation de suppression
   const handleCloseDeleteDialog = () => {
     setOpenDeleteDialog(false);
     setPointToDelete(null);
   };
-  
+
   // Suppression d'un point de livraison
   const handleDeleteDeliveryPoint = async () => {
     if (!pointToDelete) return;
-    
+
     try {
       await deleteDeliveryPoint(pointToDelete.id);
       success('Point de livraison supprimé avec succès');
-      
+
       // Fermer le dialogue et rafraîchir la liste
       handleCloseDeleteDialog();
       fetchData();
@@ -252,14 +243,14 @@ const ManageDeliveryPoints = () => {
       console.error('Erreur:', err);
     }
   };
-  
+
   // Fonction pour formater l'adresse
   const formatAddress = (address) => {
     if (!address) return 'Adresse inconnue';
     const { street, city, postalCode, country } = address;
     return `${street}, ${postalCode} ${city}, ${country || ''}`.trim();
   };
-  
+
   // Fonction pour obtenir la couleur selon le statut
   const getStatusColor = (status) => {
     switch (status) {
@@ -273,7 +264,7 @@ const ManageDeliveryPoints = () => {
         return 'default';
     }
   };
-  
+
   // Fonction pour obtenir le texte du statut
   const getStatusText = (status) => {
     switch (status) {
@@ -296,14 +287,14 @@ const ManageDeliveryPoints = () => {
         <Typography variant="h4" gutterBottom>
           Gestion des points de livraison
         </Typography>
-        
+
         <Box>
           <Tooltip title="Rafraîchir">
             <IconButton onClick={fetchData} disabled={loading} sx={{ mr: 1 }}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
-          
+
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -314,7 +305,7 @@ const ManageDeliveryPoints = () => {
           </Button>
         </Box>
       </Box>
-      
+
       {/* Filtres */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
@@ -338,7 +329,7 @@ const ManageDeliveryPoints = () => {
           </Grid>
         </Grid>
       </Paper>
-      
+
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         <TableContainer sx={{ maxHeight: 600 }}>
           {loading ? (
@@ -384,9 +375,9 @@ const ManageDeliveryPoints = () => {
                         {point.plannedTime ? format(new Date(point.plannedTime), 'dd/MM/yyyy HH:mm') : '-'}
                       </TableCell>
                       <TableCell>
-                        <Chip 
-                          size="small" 
-                          label={getStatusText(point.deliveryStatus)} 
+                        <Chip
+                          size="small"
+                          label={getStatusText(point.deliveryStatus)}
                           color={getStatusColor(point.deliveryStatus)}
                         />
                       </TableCell>
@@ -397,52 +388,15 @@ const ManageDeliveryPoints = () => {
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          
+
                           <Tooltip title="Supprimer">
-                            <IconButton 
-                              size="small" 
+                            <IconButton
+                              size="small"
                               onClick={() => handleOpenDeleteDialog(point)}
-                              disabled={point.deliveryStatus === 'IN_PROGRESS'}
                             >
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          
-                          {point.deliveryStatus === 'PENDING' && (
-                            <Tooltip title="Marquer en cours">
-                              <IconButton 
-                                size="small" 
-                                onClick={() => handleUpdateStatus(point.id, 'IN_PROGRESS')}
-                                color="warning"
-                              >
-                                <LocationIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          
-                          {point.deliveryStatus === 'IN_PROGRESS' && (
-                            <>
-                              <Tooltip title="Marquer terminé">
-                                <IconButton 
-                                  size="small" 
-                                  onClick={() => handleUpdateStatus(point.id, 'COMPLETED')}
-                                  color="success"
-                                >
-                                  <LocationIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              
-                              <Tooltip title="Marquer échec">
-                                <IconButton 
-                                  size="small" 
-                                  onClick={() => handleUpdateStatus(point.id, 'FAILED')}
-                                  color="error"
-                                >
-                                  <LocationIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          )}
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -458,7 +412,7 @@ const ManageDeliveryPoints = () => {
             </Table>
           )}
         </TableContainer>
-        
+
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
@@ -471,10 +425,10 @@ const ManageDeliveryPoints = () => {
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} sur ${count}`}
         />
       </Paper>
-      
+
       {/* Dialogue de création/édition de point de livraison */}
-      <Dialog 
-        open={openDialog} 
+      <Dialog
+        open={openDialog}
         onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
@@ -482,9 +436,9 @@ const ManageDeliveryPoints = () => {
         <DialogTitle>
           {dialogMode === 'create' ? 'Nouveau point de livraison' : 'Modifier le point de livraison'}
         </DialogTitle>
-        
+
         <Divider />
-        
+
         <DialogContent>
           {/* Utilisation du composant DeliveryPointForm modifié */}
           <DeliveryPointForm
@@ -494,10 +448,10 @@ const ManageDeliveryPoints = () => {
             submitting={submitting}
           />
         </DialogContent>
-        
+
         {/* Nous n'avons plus besoin des DialogActions car les boutons sont déjà inclus dans le DeliveryPointForm */}
       </Dialog>
-      
+
       {/* Dialogue de confirmation de suppression */}
       <Dialog
         open={openDeleteDialog}
@@ -515,14 +469,14 @@ const ManageDeliveryPoints = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={handleCloseDeleteDialog} 
+          <Button
+            onClick={handleCloseDeleteDialog}
             startIcon={<CloseIcon />}
           >
             Annuler
           </Button>
-          <Button 
-            onClick={handleDeleteDeliveryPoint} 
+          <Button
+            onClick={handleDeleteDeliveryPoint}
             color="error"
             variant="contained"
             startIcon={<DeleteIcon />}

@@ -27,10 +27,9 @@ import RouteIcon from '@mui/icons-material/Route';
 import TimerIcon from '@mui/icons-material/Timer';
 import MapIcon from '@mui/icons-material/Map';
 
-//import { getAllRoutes, optimizeRoute, getRouteDistance } from '../../api/routes';
 import { useAlert } from '../../context/AlertContext';
 import RouteMap from '../../components/maps/RouteMap';
-import { getAllRoutes, optimizeRoute, getRouteDistance, updateRouteStatus } from '../../api/routes';
+import { getAllRoutes, optimizeRoute, getRouteDistance } from '../../api/routes';
 
 const RouteOptimization = () => {
   const [routes, setRoutes] = useState([]);
@@ -42,25 +41,28 @@ const RouteOptimization = () => {
   
   const { success, error } = useAlert();
 
-  // Charger les routes au montage du composant
   useEffect(() => {
     fetchRoutes();
   }, []);
 
-  // Récupérer les routes depuis l'API
   const fetchRoutes = async () => {
     try {
       setLoading(true);
       const response = await getAllRoutes();
       setRoutes(response.data);
-      setLoading(false);
     } catch (err) {
-      error('Erreur lors du chargement des tournées');
+      console.error('Erreur lors du chargement des tournées:', err);
+      
+      if (err.response && err.response.status === 401) {
+        error('Session expirée. Vous allez être redirigé vers la page de connexion.');
+      } else {
+        error('Erreur lors du chargement des tournées. Veuillez réessayer.');
+      }
+    } finally {
       setLoading(false);
     }
   };
 
-  // Gérer le changement de route sélectionnée
   const handleRouteChange = async (event) => {
     const routeId = event.target.value;
     setSelectedRoute(routeId);
@@ -69,13 +71,18 @@ const RouteOptimization = () => {
       const selectedRouteData = routes.find(route => route.id === routeId);
       setCurrentRoute(selectedRouteData);
       
-      // Récupérer la distance de la route
       try {
         const distanceResponse = await getRouteDistance(routeId);
         setDistance(distanceResponse.data);
       } catch (err) {
-        console.error('Erreur lors du calcul de la distance', err);
+        console.log('Distance non disponible pour cette tournée:', err.response?.status || err.message);
         setDistance(null);
+        
+        if (err.response && err.response.status === 401 && 
+            (err.response.data?.message?.toLowerCase().includes('token') ||
+             err.response.data?.message?.toLowerCase().includes('expired'))) {
+          error('Votre session a expiré. Veuillez vous reconnecter.');
+        }
       }
     } else {
       setCurrentRoute(null);
@@ -83,7 +90,6 @@ const RouteOptimization = () => {
     }
   };
   
-  // Lancer l'optimisation de la route
   const handleOptimize = async () => {
     if (!selectedRoute) return;
     
@@ -93,19 +99,29 @@ const RouteOptimization = () => {
       await optimizeRoute(selectedRoute);
       success('Tournée optimisée avec succès!');
       
-      // Recharger les données
       await fetchRoutes();
       
-      // Mettre à jour la route actuelle et la distance
       if (selectedRoute) {
         const updatedRoute = routes.find(route => route.id === selectedRoute);
         setCurrentRoute(updatedRoute);
         
-        const distanceResponse = await getRouteDistance(selectedRoute);
-        setDistance(distanceResponse.data);
+        try {
+          const distanceResponse = await getRouteDistance(selectedRoute);
+          setDistance(distanceResponse.data);
+        } catch (distErr) {
+          console.warn('Impossible de récupérer la distance après optimisation:', distErr);
+          setDistance(null);
+        }
       }
     } catch (err) {
-      error('Erreur lors de l\'optimisation: ' + (err.response?.data?.error || err.message));
+      console.error('Erreur lors de l\'optimisation:', err);
+      
+      if (err.response && err.response.status === 401) {
+        error('Session expirée. Veuillez vous reconnecter.');
+      } else {
+        const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Erreur inconnue';
+        error('Erreur lors de l\'optimisation: ' + errorMessage);
+      }
     } finally {
       setOptimizing(false);
     }
@@ -224,7 +240,7 @@ const RouteOptimization = () => {
                   </ListItemIcon>
                   <ListItemText 
                     primary="Distance totale" 
-                    secondary={distance ? `${distance.toFixed(2)} km` : 'Calcul en cours...'}
+                    secondary={distance ? `${distance.toFixed(2)} km` : 'Non disponible'}
                   />
                 </ListItem>
               </List>

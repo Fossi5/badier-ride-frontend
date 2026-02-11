@@ -1,14 +1,14 @@
 // src/pages/driver/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Typography, 
-  Box, 
-  Paper, 
-  Grid, 
-  List, 
-  ListItem, 
-  ListItemText, 
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Grid,
+  List,
+  ListItem,
+  ListItemText,
   Divider,
   Chip,
   Button,
@@ -41,7 +41,7 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
-  
+
   const { success, error } = useAlert();
 
   // Charger les données au montage du composant
@@ -53,28 +53,28 @@ const DriverDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Récupérer profil chauffeur
       const profileResponse = await getDriverProfile();
       setDriverInfo(profileResponse.data);
       setIsAvailable(profileResponse.data.isAvailable);
-      
+
       // Récupérer ses tournées
       const routesResponse = await getDriverRoutes();
       setRoutes(routesResponse.data);
-      
+
       // Définir la tournée active (si existe)
       const inProgressRoute = routesResponse.data.find(r => r.status === 'IN_PROGRESS');
       const plannedRoute = routesResponse.data.find(r => r.status === 'PLANNED');
-      
+
       if (inProgressRoute) {
         setActiveRoute(inProgressRoute);
       } else if (plannedRoute) {
         setActiveRoute(plannedRoute);
       }
-      
+
       setLoading(false);
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors du chargement des données');
       setLoading(false);
@@ -83,15 +83,21 @@ const DriverDashboard = () => {
 
   // Mettre à jour le statut d'un point de livraison
   const handleStatusUpdate = async (pointId, newStatus) => {
+    if (!activeRoute) {
+      error('Aucune tournée active');
+      return;
+    }
+
     try {
       setUpdating(true);
-      await updateDeliveryPointStatus(pointId, newStatus);
-      
+      // Le statut est maintenant par tournée, on passe le routeId
+      await updateDeliveryPointStatus(activeRoute.id, pointId, newStatus);
+
       success(`Point de livraison mis à jour: ${newStatus}`);
-      
+
       // Recharger les données
       await fetchData();
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors de la mise à jour du statut');
     } finally {
@@ -105,12 +111,12 @@ const DriverDashboard = () => {
       setUpdating(true);
       // Mettre à jour le statut de la route
       await updateRouteStatus(routeId, 'IN_PROGRESS');
-      
+
       success('Tournée démarrée avec succès');
-      
+
       // Recharger les données
       await fetchData();
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors du démarrage de la tournée');
     } finally {
@@ -124,12 +130,12 @@ const DriverDashboard = () => {
       setUpdating(true);
       // Mettre à jour le statut de la route
       await updateRouteStatus(routeId, 'COMPLETED');
-      
+
       success('Tournée terminée avec succès');
-      
+
       // Recharger les données
       await fetchData();
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors de la clôture de la tournée');
     } finally {
@@ -149,13 +155,13 @@ const DriverDashboard = () => {
   // Mettre à jour la disponibilité du chauffeur
   const handleAvailabilityToggle = async (event) => {
     const newAvailability = event.target.checked;
-    
+
     try {
       setUpdating(true);
       await updateDriverAvailability(newAvailability);
       setIsAvailable(newAvailability);
       success(`Statut mis à jour: ${newAvailability ? 'Disponible' : 'Indisponible'}`);
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors de la mise à jour de la disponibilité');
       // Remettre l'ancien état en cas d'erreur
@@ -192,23 +198,23 @@ const DriverDashboard = () => {
         failed: 0
       };
     }
-    
+
     // Filtrer les tournées d'aujourd'hui
     const today = new Date().toISOString().split('T')[0];
     const todayRoutes = routes.filter(route => {
       return route.startTime && route.startTime.startsWith(today);
     });
-    
+
     // Compter les points de livraison par statut
     let totalDeliveries = 0;
     let completed = 0;
     let pending = 0;
     let failed = 0;
-    
+
     todayRoutes.forEach(route => {
       route.deliveryPoints.forEach(point => {
         totalDeliveries++;
-        
+
         if (point.deliveryStatus === 'COMPLETED') {
           completed++;
         } else if (point.deliveryStatus === 'FAILED') {
@@ -218,7 +224,7 @@ const DriverDashboard = () => {
         }
       });
     });
-    
+
     return {
       totalDeliveries,
       completed,
@@ -228,13 +234,13 @@ const DriverDashboard = () => {
   };
 
   const stats = getTodayStats();
-  
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom>
         Tableau de bord chauffeur
       </Typography>
-      
+
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
           <CircularProgress />
@@ -257,13 +263,13 @@ const DriverDashboard = () => {
                   label={isAvailable ? "Disponible" : "Indisponible"}
                 />
               </Box>
-              
+
               <Divider sx={{ mb: 2 }} />
-              
+
               <Typography variant="subtitle1" gutterBottom>
                 Statistiques du jour
               </Typography>
-              
+
               <Grid container spacing={2} sx={{ mb: 2 }}>
                 <Grid item xs={6}>
                   <Card variant="outlined">
@@ -314,13 +320,13 @@ const DriverDashboard = () => {
                   </Card>
                 </Grid>
               </Grid>
-              
+
               {activeRoute && (
                 <>
                   <Typography variant="subtitle1" gutterBottom>
                     Tournée active
                   </Typography>
-                  
+
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body1">
                       {activeRoute.name}
@@ -328,18 +334,18 @@ const DriverDashboard = () => {
                     <Typography variant="body2" color="text.secondary">
                       {activeRoute.startTime ? format(new Date(activeRoute.startTime), 'dd/MM/yyyy HH:mm') : 'Non planifiée'}
                     </Typography>
-                    <Chip 
-                      size="small" 
-                      label={activeRoute.status} 
+                    <Chip
+                      size="small"
+                      label={activeRoute.status}
                       color={
                         activeRoute.status === 'COMPLETED' ? 'success' :
-                        activeRoute.status === 'IN_PROGRESS' ? 'primary' :
-                        activeRoute.status === 'CANCELLED' ? 'error' : 'default'
+                          activeRoute.status === 'IN_PROGRESS' ? 'primary' :
+                            activeRoute.status === 'CANCELLED' ? 'error' : 'default'
                       }
                       sx={{ mt: 1 }}
                     />
                   </Box>
-                  
+
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                     {activeRoute.status === 'PLANNED' && (
                       <Button
@@ -353,7 +359,7 @@ const DriverDashboard = () => {
                         Démarrer
                       </Button>
                     )}
-                    
+
                     {activeRoute.status === 'IN_PROGRESS' && (
                       <Button
                         variant="contained"
@@ -367,11 +373,11 @@ const DriverDashboard = () => {
                       </Button>
                     )}
                   </Box>
-                  
+
                   <Typography variant="subtitle2" gutterBottom>
                     Points de livraison ({activeRoute.deliveryPoints.length})
                   </Typography>
-                  
+
                   <List dense sx={{ maxHeight: 300, overflow: 'auto' }}>
                     {activeRoute.deliveryPoints.map((point, index) => (
                       <React.Fragment key={point.id}>
@@ -381,9 +387,9 @@ const DriverDashboard = () => {
                               {point.deliveryStatus !== 'COMPLETED' && point.deliveryStatus !== 'FAILED' && (
                                 <>
                                   <Tooltip title="Marquer comme livré">
-                                    <IconButton 
-                                      edge="end" 
-                                      aria-label="complete" 
+                                    <IconButton
+                                      edge="end"
+                                      aria-label="complete"
                                       size="small"
                                       color="success"
                                       onClick={() => handleStatusUpdate(point.id, 'COMPLETED')}
@@ -393,9 +399,9 @@ const DriverDashboard = () => {
                                     </IconButton>
                                   </Tooltip>
                                   <Tooltip title="Marquer comme échec">
-                                    <IconButton 
-                                      edge="end" 
-                                      aria-label="fail" 
+                                    <IconButton
+                                      edge="end"
+                                      aria-label="fail"
                                       size="small"
                                       color="error"
                                       onClick={() => handleStatusUpdate(point.id, 'FAILED')}
@@ -417,13 +423,13 @@ const DriverDashboard = () => {
                                 <Typography variant="body2" component="span">
                                   {point.address.street}, {point.address.city}
                                 </Typography>
-                                <Chip 
-                                  size="small" 
-                                  label={point.deliveryStatus} 
+                                <Chip
+                                  size="small"
+                                  label={point.deliveryStatus}
                                   color={
                                     point.deliveryStatus === 'COMPLETED' ? 'success' :
-                                    point.deliveryStatus === 'IN_PROGRESS' ? 'warning' :
-                                    point.deliveryStatus === 'FAILED' ? 'error' : 'default'
+                                      point.deliveryStatus === 'IN_PROGRESS' ? 'warning' :
+                                        point.deliveryStatus === 'FAILED' ? 'error' : 'default'
                                   }
                                   sx={{ ml: 1 }}
                                 />
@@ -437,7 +443,7 @@ const DriverDashboard = () => {
                   </List>
                 </>
               )}
-              
+
               {!activeRoute && (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                   Aucune tournée active pour aujourd'hui.
@@ -445,29 +451,29 @@ const DriverDashboard = () => {
               )}
             </Paper>
           </Grid>
-          
+
           {/* Carte de livraison */}
           <Grid item xs={12} md={8}>
             <Paper sx={{ p: 0, overflow: 'hidden', height: 'calc(100vh - 180px)', minHeight: 500 }}>
               <Box sx={{ height: '100%', position: 'relative' }}>
-                <DeliveryMap 
-                  route={activeRoute} 
-                  onStatusUpdate={handleStatusUpdate} 
+                <DeliveryMap
+                  route={activeRoute}
+                  onStatusUpdate={handleStatusUpdate}
                   onLocationUpdate={handleLocationUpdate}
                   loading={updating}
                 />
-                
+
                 <Tooltip title="Recentrer sur ma position">
                   <IconButton
                     color="primary"
                     size="large"
-                    sx={{ 
-                      position: 'absolute', 
-                      bottom: 16, 
-                      right: 16, 
-                      bgcolor: 'white', 
+                    sx={{
+                      position: 'absolute',
+                      bottom: 16,
+                      right: 16,
+                      bgcolor: 'white',
                       boxShadow: 3,
-                      '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.9)' } 
+                      '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.9)' }
                     }}
                     onClick={handleRecenter}
                   >

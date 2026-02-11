@@ -105,7 +105,7 @@ export const openNavigation = (app, points, origin = null) => {
     case "google":
       url = getGoogleMapsUrl(points, origin);
       break;
-    case "waze":
+    case "waze": {
       // Waze : uniquement vers le prochain point
       const nextPoint =
         points.find(
@@ -113,6 +113,7 @@ export const openNavigation = (app, points, origin = null) => {
         ) || points[0];
       url = getWazeUrl(nextPoint.position);
       break;
+    }
     case "apple":
       url = getAppleMapsUrl(points);
       break;
