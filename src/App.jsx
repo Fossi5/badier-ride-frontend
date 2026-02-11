@@ -86,6 +86,7 @@ function App() {
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="drivers" element={<ManageDrivers />} />
                 <Route path="dispatchers" element={<ManageDispatchers />} />
+                <Route path="routes" element={<ManageRoutes />} />
 
 
                 <Route path="delivery-points" element={<ManageDeliveryPoints />} />

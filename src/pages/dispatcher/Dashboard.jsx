@@ -53,15 +53,15 @@ const DispatcherDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
-  
+
   const navigate = useNavigate();
   const { error } = useAlert();
-  
+
   // Charger les données au montage du composant
   useEffect(() => {
     fetchData();
   }, []);
-  
+
   // Fonction pour récupérer toutes les données nécessaires
   const fetchData = async () => {
     setLoading(true);
@@ -73,7 +73,7 @@ const DispatcherDashboard = () => {
         getAvailableDrivers(),
         getDispatcherProfile()
       ]);
-      
+
       setRoutes(routesRes.data);
       setDeliveryPoints(deliveryPointsRes.data);
       setAvailableDrivers(driversRes.data);
@@ -85,60 +85,64 @@ const DispatcherDashboard = () => {
       setLoading(false);
     }
   };
-  
+
   // Gestion du changement d'onglet
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
-  
+
   // Fonctions pour filtrer les données selon différents critères
   const getTodayRoutes = () => {
     const today = new Date().toISOString().split('T')[0];
-    return routes.filter(route => 
+    return routes.filter(route =>
       route.startTime && route.startTime.startsWith(today)
     );
   };
-  
+
   const getActiveRoutes = () => {
     return routes.filter(route => route.status === 'IN_PROGRESS');
   };
-  
+
   const getPlannedRoutes = () => {
     return routes.filter(route => route.status === 'PLANNED');
   };
-  
+
   const getPendingDeliveries = () => {
     return deliveryPoints.filter(dp => dp.deliveryStatus === 'PENDING');
   };
-  
+
   // Statistiques et listes filtrées
   const todayRoutes = loading ? [] : getTodayRoutes();
   const activeRoutes = loading ? [] : getActiveRoutes();
   const plannedRoutes = loading ? [] : getPlannedRoutes();
   const pendingDeliveries = loading ? [] : getPendingDeliveries();
-  
+
   // Fonction pour naviguer vers la création d'une route
   const navigateToCreateRoute = () => {
-    navigate('/dispatcher/routes/create');
+    navigate('/dispatcher/routes', { state: { openCreateDialog: true } });
   };
-  
+
+  const navigateToCreateDeliveryPoint = () => {
+    navigate('/dispatcher/delivery-points', { state: { openCreateDialog: true } });
+  };
+
   // Fonction pour naviguer vers la page d'optimisation de route
   const navigateToOptimizeRoute = (routeId) => {
     navigate(`/dispatcher/optimize?routeId=${routeId}`);
   };
-  
+
   // Fonction pour naviguer vers les détails d'une route
   const navigateToRouteDetails = (routeId) => {
     navigate(`/dispatcher/routes/${routeId}`);
   };
-  
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           Tableau de bord répartiteur
         </Typography>
-        
+
         <Box>
           <Tooltip title="Rafraîchir">
             <IconButton onClick={fetchData} disabled={loading}>
@@ -147,7 +151,7 @@ const DispatcherDashboard = () => {
           </Tooltip>
         </Box>
       </Box>
-      
+
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
@@ -179,7 +183,7 @@ const DispatcherDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             {/* Statistiques des tournées */}
             <Grid item xs={12} sm={6} md={3}>
               <Card>
@@ -215,7 +219,7 @@ const DispatcherDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             {/* Statistiques des points de livraison */}
             <Grid item xs={12} sm={6} md={3}>
               <Card>
@@ -248,7 +252,7 @@ const DispatcherDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             {/* Statistiques des chauffeurs */}
             <Grid item xs={12} sm={6} md={3}>
               <Card>
@@ -283,7 +287,7 @@ const DispatcherDashboard = () => {
               </Card>
             </Grid>
           </Grid>
-          
+
           {/* Onglets pour les différentes sections */}
           <Paper sx={{ width: '100%', mb: 4 }}>
             <Tabs
@@ -297,9 +301,9 @@ const DispatcherDashboard = () => {
               <Tab label="Points de livraison en attente" />
               <Tab label="Chauffeurs disponibles" />
             </Tabs>
-            
+
             <Divider />
-            
+
             {/* Contenu de l'onglet 1: Tournées d'aujourd'hui */}
             {tabValue === 0 && (
               <Box sx={{ p: 3 }}>
@@ -316,7 +320,7 @@ const DispatcherDashboard = () => {
                     Nouvelle tournée
                   </Button>
                 </Box>
-                
+
                 {todayRoutes.length === 0 ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                     <Typography variant="body1" color="textSecondary">
@@ -335,7 +339,7 @@ const DispatcherDashboard = () => {
                           <Box>
                             {route.status === 'PLANNED' && (
                               <Tooltip title="Optimiser cette tournée">
-                                <IconButton 
+                                <IconButton
                                   color="primary"
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -350,30 +354,31 @@ const DispatcherDashboard = () => {
                         }
                       >
                         <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: 
-                            route.status === 'COMPLETED' ? 'success.main' : 
-                            route.status === 'IN_PROGRESS' ? 'info.main' : 
-                            route.status === 'CANCELLED' ? 'error.main' : 
-                            'warning.main'
+                          <Avatar sx={{
+                            bgcolor:
+                              route.status === 'COMPLETED' ? 'success.main' :
+                                route.status === 'IN_PROGRESS' ? 'info.main' :
+                                  route.status === 'CANCELLED' ? 'error.main' :
+                                    'warning.main'
                           }}>
-                            {route.status === 'COMPLETED' ? <CheckCircleIcon /> : 
-                             route.status === 'CANCELLED' ? <CancelIcon /> : 
-                             <ScheduleIcon />}
+                            {route.status === 'COMPLETED' ? <CheckCircleIcon /> :
+                              route.status === 'CANCELLED' ? <CancelIcon /> :
+                                <ScheduleIcon />}
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
                           primary={
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                               {route.name}
-                              <Chip 
-                                size="small" 
-                                label={route.status} 
+                              <Chip
+                                size="small"
+                                label={route.status}
                                 color={
-                                  route.status === 'COMPLETED' ? 'success' : 
-                                  route.status === 'IN_PROGRESS' ? 'primary' : 
-                                  route.status === 'CANCELLED' ? 'error' : 
-                                  'default'
-                                } 
+                                  route.status === 'COMPLETED' ? 'success' :
+                                    route.status === 'IN_PROGRESS' ? 'primary' :
+                                      route.status === 'CANCELLED' ? 'error' :
+                                        'default'
+                                }
                                 sx={{ ml: 1 }}
                               />
                             </Box>
@@ -396,7 +401,7 @@ const DispatcherDashboard = () => {
                 )}
               </Box>
             )}
-            
+
             {/* Contenu de l'onglet 2: Points de livraison en attente */}
             {tabValue === 1 && (
               <Box sx={{ p: 3 }}>
@@ -408,12 +413,12 @@ const DispatcherDashboard = () => {
                     variant="contained"
                     size="small"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/dispatcher/delivery-points/create')}
+                    onClick={navigateToCreateDeliveryPoint}
                   >
                     Ajouter un point
                   </Button>
                 </Box>
-                
+
                 {pendingDeliveries.length === 0 ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                     <Typography variant="body1" color="textSecondary">
@@ -438,9 +443,9 @@ const DispatcherDashboard = () => {
                           primary={point.clientName}
                           secondary={formatAddress(point.address)}
                         />
-                        <Chip 
-                          size="small" 
-                          label={point.deliveryStatus} 
+                        <Chip
+                          size="small"
+                          label={point.deliveryStatus}
                           color="default"
                         />
                       </ListItem>
@@ -460,14 +465,14 @@ const DispatcherDashboard = () => {
                 )}
               </Box>
             )}
-            
+
             {/* Contenu de l'onglet 3: Chauffeurs disponibles */}
             {tabValue === 2 && (
               <Box sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
                   Chauffeurs disponibles ({availableDrivers.length})
                 </Typography>
-                
+
                 {availableDrivers.length === 0 ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                     <Typography variant="body1" color="textSecondary">
@@ -488,7 +493,7 @@ const DispatcherDashboard = () => {
                           secondary={
                             <>
                               <Typography variant="body2" component="span">
-                                {driver.phoneNumber || 'Pas de téléphone'} • 
+                                {driver.phoneNumber || 'Pas de téléphone'} •
                                 {driver.vehicleType ? ` ${driver.vehicleType}` : ' Véhicule non spécifié'}
                               </Typography>
                               {driver.lastLocationUpdate && (
@@ -517,14 +522,14 @@ const DispatcherDashboard = () => {
               </Box>
             )}
           </Paper>
-          
+
           {/* Carte pour les actions rapides */}
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Actions rapides
             </Typography>
             <Divider sx={{ mb: 2 }} />
-            
+
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
                 <Button
@@ -551,7 +556,7 @@ const DispatcherDashboard = () => {
                   variant="outlined"
                   fullWidth
                   startIcon={<LocationIcon />}
-                  onClick={() => navigate('/dispatcher/delivery-points/create')}
+                  onClick={navigateToCreateDeliveryPoint}
                 >
                   Nouveau point
                 </Button>

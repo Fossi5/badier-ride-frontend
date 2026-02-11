@@ -46,16 +46,16 @@ import {
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 
 // Import des services API
-import { 
-  getAllRoutes, 
-  createRoute, 
-  updateRoute, 
-  deleteRoute, 
-  updateRouteStatus 
+import {
+  getAllRoutes,
+  createRoute,
+  updateRoute,
+  deleteRoute,
+  updateRouteStatus
 } from '../../api/routes';
 import { getAllDrivers } from '../../api/drivers';
 import { getAvailableDrivers } from '../../api/drivers';
@@ -75,14 +75,14 @@ const ManageRoutes = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
+
   // États pour les erreurs d'autorisations
   const [authErrors, setAuthErrors] = useState({
     driversError: false,
     dispatchersError: false,
     routesError: false
   });
-  
+
   // États pour le dialogue de création/édition
   const [openRouteDialog, setOpenRouteDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('create');
@@ -99,32 +99,41 @@ const ManageRoutes = () => {
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  
+
   // État pour le dialogue de confirmation de suppression
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState(null);
-  
+
   // Hooks et contextes
   const navigate = useNavigate();
-  const { success, error,  } = useAlert();
+  const location = useLocation();
+  const shouldAutoOpenCreateDialog = location.state?.openCreateDialog;
+  const { success, error, } = useAlert();
   const { currentUser } = useAuth();
-  
+
   // Charger les données au montage du composant
   useEffect(() => {
     fetchData();
   }, []);
-  
+
+  useEffect(() => {
+    if (!loading && shouldAutoOpenCreateDialog) {
+      handleOpenCreateDialog();
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [loading, shouldAutoOpenCreateDialog, location.pathname, navigate]);
+
   // Fonction pour charger toutes les données nécessaires
   const fetchData = async () => {
     setLoading(true);
-    
+
     // Réinitialiser les erreurs d'autorisation
     setAuthErrors({
       driversError: false,
       dispatchersError: false,
       routesError: false
     });
-    
+
     // Charger les tournées
     try {
       const routesRes = await getAllRoutes();
@@ -138,7 +147,7 @@ const ManageRoutes = () => {
       }
       console.error('Erreur routes:', err);
     }
-    
+
     // Charger les points de livraison
     try {
       const deliveryPointsRes = await getAllDeliveryPoints();
@@ -147,7 +156,7 @@ const ManageRoutes = () => {
       error('Erreur lors du chargement des points de livraison: ' + (err.response?.data?.error || err.message));
       console.error('Erreur points de livraison:', err);
     }
-    
+
     // Charger les chauffeurs disponibles
     try {
       const availableDriversRes = await getAvailableDrivers();
@@ -156,7 +165,7 @@ const ManageRoutes = () => {
       if (err.response?.status === 403) {
         setAuthErrors(prev => ({ ...prev, driversError: true }));
         console.warn("Pas d'accès aux chauffeurs disponibles, utilisation des chauffeurs standards");
-        
+
         // Tenter de charger les chauffeurs standards comme fallback
         try {
           const driversRes = await getAllDrivers();
@@ -169,7 +178,7 @@ const ManageRoutes = () => {
         console.error('Erreur chauffeurs disponibles:', err);
       }
     }
-    
+
     // Charger les répartiteurs
     try {
       const dispatchersRes = await getAllDispatchers();
@@ -183,7 +192,7 @@ const ManageRoutes = () => {
         console.error('Erreur répartiteurs:', err);
       }
     }
-    
+
     setLoading(false);
   };
 
@@ -191,13 +200,13 @@ const ManageRoutes = () => {
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
-  
+
   // Gestion du changement de nombre de lignes par page
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
-  
+
   // Ouverture du dialogue pour créer une nouvelle tournée
   const handleOpenCreateDialog = () => {
     // Vérifier si toutes les données nécessaires sont disponibles
@@ -205,7 +214,7 @@ const ManageRoutes = () => {
       error("Vous n'avez pas les autorisations nécessaires pour créer une tournée");
       return;
     }
-    
+
     // Préremplir avec le dispatcher actuel si l'utilisateur est un dispatcher
     let initialData = {
       name: '',
@@ -217,20 +226,20 @@ const ManageRoutes = () => {
       notes: '',
       status: 'PLANNED'
     };
-    
+
     if (currentUser?.role === 'DISPATCHER') {
       const currentDispatcher = dispatchers.find(d => d.username === currentUser.username);
       if (currentDispatcher) {
         initialData.dispatcherId = currentDispatcher.id;
       }
     }
-    
+
     setDialogMode('create');
     setFormData(initialData);
     setFormErrors({});
     setOpenRouteDialog(true);
   };
-  
+
   // Ouverture du dialogue pour éditer une tournée existante
   const handleOpenEditDialog = (route) => {
     // Vérifier si toutes les données nécessaires sont disponibles
@@ -238,7 +247,7 @@ const ManageRoutes = () => {
       error("Vous n'avez pas les autorisations nécessaires pour modifier une tournée");
       return;
     }
-    
+
     setDialogMode('edit');
     setSelectedRoute(route);
     setFormData({
@@ -254,13 +263,13 @@ const ManageRoutes = () => {
     setFormErrors({});
     setOpenRouteDialog(true);
   };
-  
+
   // Fermeture du dialogue
   const handleCloseRouteDialog = () => {
     setOpenRouteDialog(false);
     setSelectedRoute(null);
   };
-  
+
   // Gestion des changements de champs du formulaire
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -268,7 +277,7 @@ const ManageRoutes = () => {
       ...formData,
       [name]: value
     });
-    
+
     // Effacer l'erreur quand l'utilisateur modifie le champ
     if (formErrors[name]) {
       setFormErrors({
@@ -277,14 +286,14 @@ const ManageRoutes = () => {
       });
     }
   };
-  
+
   // Gestion des changements de dates
   const handleDateChange = (name, date) => {
     setFormData({
       ...formData,
       [name]: date
     });
-    
+
     // Effacer l'erreur quand l'utilisateur modifie le champ
     if (formErrors[name]) {
       setFormErrors({
@@ -293,7 +302,7 @@ const ManageRoutes = () => {
       });
     }
   };
-  
+
   // Validation du formulaire
   /*const validateForm = () => {
     const errors = {};
@@ -321,7 +330,7 @@ const ManageRoutes = () => {
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };*/
-  
+
   // Soumission du formulaire
   /*const handleSubmit = async () => {
     if (!validateForm()) return;
@@ -362,120 +371,120 @@ const ManageRoutes = () => {
 
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData.name) {
-        errors.name = 'Le nom de la tournée est obligatoire';
+      errors.name = 'Le nom de la tournée est obligatoire';
     }
-    
+
     if (!formData.driverId) {
-        errors.driverId = 'Veuillez sélectionner un chauffeur';
+      errors.driverId = 'Veuillez sélectionner un chauffeur';
     }
-    
+
     // Ne validez le champ dispatcherId que si l'utilisateur n'est pas un dispatcher
     if (!formData.dispatcherId && currentUser?.role !== 'DISPATCHER') {
-        errors.dispatcherId = 'Veuillez sélectionner un répartiteur';
+      errors.dispatcherId = 'Veuillez sélectionner un répartiteur';
     }
-    
+
     if (formData.deliveryPointIds.length === 0) {
-        errors.deliveryPointIds = 'Veuillez sélectionner au moins un point de livraison';
+      errors.deliveryPointIds = 'Veuillez sélectionner au moins un point de livraison';
     }
-    
+
     if (!formData.startTime) {
-        errors.startTime = 'La date et heure de début sont obligatoires';
+      errors.startTime = 'La date et heure de début sont obligatoires';
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-};
+  };
 
-const handleSubmit = async () => {
-  if (!validateForm()) return;
-  
-  // S'assurer que le dispatcherId est défini pour un dispatcher
-  let submissionData = { ...formData };
-  
-  if (currentUser?.role === 'DISPATCHER') {
-    if (submissionData.dispatcherId) {
-      console.log('Dispatcher ID déjà défini dans le formulaire:', submissionData.dispatcherId);
-    } 
-    else if (currentUser.username) {
-      console.log('Recherche dispatcher pour username:', currentUser.username);
-      const currentDispatcher = dispatchers.find(d => d.username === currentUser.username);
-      
-      if (currentDispatcher) {
-        submissionData.dispatcherId = currentDispatcher.id;
-        console.log('Dispatcher ID défini automatiquement:', currentDispatcher.id);
-      } 
-      else {
-        console.warn("Dispatcher non trouvé dans la liste avec username:", currentUser.username);
-        
-        // Fallback au premier dispatcher si aucun correspondant n'est trouvé
-        if (dispatchers.length > 0) {
-          submissionData.dispatcherId = dispatchers[0].id;
-          console.log('Dispatcher ID forcé au premier de la liste:', dispatchers[0].id);
-        } else {
-          error("Aucun dispatcher disponible. Veuillez contacter l'administrateur.");
-          setSubmitting(false);
-          return;
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    // S'assurer que le dispatcherId est défini pour un dispatcher
+    let submissionData = { ...formData };
+
+    if (currentUser?.role === 'DISPATCHER') {
+      if (submissionData.dispatcherId) {
+        console.log('Dispatcher ID déjà défini dans le formulaire:', submissionData.dispatcherId);
+      }
+      else if (currentUser.username) {
+        console.log('Recherche dispatcher pour username:', currentUser.username);
+        const currentDispatcher = dispatchers.find(d => d.username === currentUser.username);
+
+        if (currentDispatcher) {
+          submissionData.dispatcherId = currentDispatcher.id;
+          console.log('Dispatcher ID défini automatiquement:', currentDispatcher.id);
+        }
+        else {
+          console.warn("Dispatcher non trouvé dans la liste avec username:", currentUser.username);
+
+          // Fallback au premier dispatcher si aucun correspondant n'est trouvé
+          if (dispatchers.length > 0) {
+            submissionData.dispatcherId = dispatchers[0].id;
+            console.log('Dispatcher ID forcé au premier de la liste:', dispatchers[0].id);
+          } else {
+            error("Aucun dispatcher disponible. Veuillez contacter l'administrateur.");
+            setSubmitting(false);
+            return;
+          }
         }
       }
+      // Si aucun username n'est disponible, utiliser le premier dispatcher
+      else if (dispatchers.length > 0) {
+        submissionData.dispatcherId = dispatchers[0].id;
+        console.log('Dispatcher ID forcé au premier de la liste (aucun username):', dispatchers[0].id);
+      } else {
+        error("Aucun dispatcher disponible. Veuillez contacter l'administrateur.");
+        setSubmitting(false);
+        return;
+      }
     }
-    // Si aucun username n'est disponible, utiliser le premier dispatcher
-    else if (dispatchers.length > 0) {
-      submissionData.dispatcherId = dispatchers[0].id;
-      console.log('Dispatcher ID forcé au premier de la liste (aucun username):', dispatchers[0].id);
-    } else {
-      error("Aucun dispatcher disponible. Veuillez contacter l'administrateur.");
+
+    setSubmitting(true);
+
+    try {
+      console.log('Envoi de la requête avec données:', submissionData);
+
+      if (dialogMode === 'create') {
+        const result = await createRoute(submissionData);
+        console.log('Création réussie, résultat:', result);
+        success('Tournée créée avec succès');
+      } else {
+        const result = await updateRoute(selectedRoute.id, submissionData);
+        console.log('Mise à jour réussie, résultat:', result);
+        success('Tournée mise à jour avec succès');
+      }
+
+      handleCloseRouteDialog();
+      fetchData();
+    } catch (err) {
+      console.error('Erreur lors de la soumission:', err);
+      error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée: ` + (err.response?.data?.error || err.message));
+    } finally {
       setSubmitting(false);
-      return;
     }
-  }
-  
-  setSubmitting(true);
-  
-  try {
-    console.log('Envoi de la requête avec données:', submissionData);
-    
-    if (dialogMode === 'create') {
-      const result = await createRoute(submissionData);
-      console.log('Création réussie, résultat:', result);
-      success('Tournée créée avec succès');
-    } else {
-      const result = await updateRoute(selectedRoute.id, submissionData);
-      console.log('Mise à jour réussie, résultat:', result);
-      success('Tournée mise à jour avec succès');
-    }
-    
-    handleCloseRouteDialog();
-    fetchData();
-  } catch (err) {
-    console.error('Erreur lors de la soumission:', err);
-    error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée: ` + (err.response?.data?.error || err.message));
-  } finally {
-    setSubmitting(false);
-  }
-};
-  
+  };
+
   // Ouverture du dialogue de confirmation de suppression
   const handleOpenDeleteDialog = (route) => {
     setRouteToDelete(route);
     setOpenDeleteDialog(true);
   };
-  
+
   // Fermeture du dialogue de confirmation de suppression
   const handleCloseDeleteDialog = () => {
     setOpenDeleteDialog(false);
     setRouteToDelete(null);
   };
-  
+
   // Suppression d'une tournée
   const handleDeleteRoute = async () => {
     if (!routeToDelete) return;
-    
+
     try {
       await deleteRoute(routeToDelete.id);
       success('Tournée supprimée avec succès');
-      
+
       // Fermer le dialogue et rafraîchir la liste
       handleCloseDeleteDialog();
       fetchData();
@@ -488,7 +497,7 @@ const handleSubmit = async () => {
       console.error('Erreur:', err);
     }
   };
-  
+
   // Mise à jour du statut d'une tournée
   const handleUpdateStatus = async (routeId, newStatus) => {
     try {
@@ -504,29 +513,29 @@ const handleSubmit = async () => {
       console.error('Erreur:', err);
     }
   };
-  
+
   // Navigation vers la page d'optimisation
   const handleOptimizeRoute = (routeId) => {
     navigate(`/dispatcher/optimize?routeId=${routeId}`);
   };
-  
+
   // Détermine si l'utilisateur courant est le dispatcher assigné à la tournée
   const isAssignedDispatcher = (route) => {
-    return currentUser?.role === 'DISPATCHER' && 
-           route.dispatcher && 
-           route.dispatcher.username === currentUser.username;
+    return currentUser?.role === 'DISPATCHER' &&
+      route.dispatcher &&
+      route.dispatcher.username === currentUser.username;
   };
-  
+
   // Détermine si l'utilisateur a le droit de modifier une tournée spécifique
   const canEditRoute = (route) => {
     return currentUser?.role === 'ADMIN' || isAssignedDispatcher(route);
   };
-  
+
   // Déterminer les drivers à afficher dans la liste
   const getDriversForList = () => {
     return authErrors.driversError ? drivers : availableDrivers.length > 0 ? availableDrivers : drivers;
   };
-  
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       {/* Affichage des alertes pour les erreurs d'autorisation */}
@@ -538,19 +547,19 @@ const handleSubmit = async () => {
           Certaines fonctionnalités peuvent être limitées.
         </Alert>
       )}
-      
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           Gestion des tournées
         </Typography>
-        
+
         <Box>
           <Tooltip title="Rafraîchir">
             <IconButton onClick={fetchData} disabled={loading} sx={{ mr: 1 }}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
-          
+
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -561,7 +570,7 @@ const handleSubmit = async () => {
           </Button>
         </Box>
       </Box>
-      
+
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         <TableContainer sx={{ maxHeight: 600 }}>
           {loading ? (
@@ -596,13 +605,13 @@ const handleSubmit = async () => {
                       <TableCell>{route.driver?.username || 'Non assigné'}</TableCell>
                       <TableCell>{route.dispatcher?.username || 'Non assigné'}</TableCell>
                       <TableCell>
-                        <Chip 
-                          size="small" 
-                          label={route.status} 
+                        <Chip
+                          size="small"
+                          label={route.status}
                           color={
                             route.status === 'COMPLETED' ? 'success' :
-                            route.status === 'IN_PROGRESS' ? 'primary' :
-                            route.status === 'CANCELLED' ? 'error' : 'default'
+                              route.status === 'IN_PROGRESS' ? 'primary' :
+                                route.status === 'CANCELLED' ? 'error' : 'default'
                           }
                         />
                       </TableCell>
@@ -614,8 +623,8 @@ const handleSubmit = async () => {
                         <Box sx={{ display: 'flex' }}>
                           <Tooltip title="Modifier">
                             <span>
-                              <IconButton 
-                                size="small" 
+                              <IconButton
+                                size="small"
                                 onClick={() => handleOpenEditDialog(route)}
                                 disabled={!canEditRoute(route)}
                               >
@@ -623,11 +632,11 @@ const handleSubmit = async () => {
                               </IconButton>
                             </span>
                           </Tooltip>
-                          
+
                           <Tooltip title="Supprimer">
                             <span>
-                              <IconButton 
-                                size="small" 
+                              <IconButton
+                                size="small"
                                 onClick={() => handleOpenDeleteDialog(route)}
                                 disabled={!canEditRoute(route) || route.status === 'IN_PROGRESS'}
                               >
@@ -635,11 +644,11 @@ const handleSubmit = async () => {
                               </IconButton>
                             </span>
                           </Tooltip>
-                          
+
                           <Tooltip title="Optimiser">
                             <span>
-                              <IconButton 
-                                size="small" 
+                              <IconButton
+                                size="small"
                                 onClick={() => handleOptimizeRoute(route.id)}
                                 disabled={route.status === 'COMPLETED' || route.status === 'CANCELLED'}
                               >
@@ -647,11 +656,11 @@ const handleSubmit = async () => {
                               </IconButton>
                             </span>
                           </Tooltip>
-                          
+
                           {canEditRoute(route) && route.status === 'PLANNED' && (
                             <Tooltip title="Démarrer">
-                              <IconButton 
-                                size="small" 
+                              <IconButton
+                                size="small"
                                 onClick={() => handleUpdateStatus(route.id, 'IN_PROGRESS')}
                                 color="primary"
                               >
@@ -659,11 +668,11 @@ const handleSubmit = async () => {
                               </IconButton>
                             </Tooltip>
                           )}
-                          
+
                           {canEditRoute(route) && route.status === 'IN_PROGRESS' && (
                             <Tooltip title="Terminer">
-                              <IconButton 
-                                size="small" 
+                              <IconButton
+                                size="small"
                                 onClick={() => handleUpdateStatus(route.id, 'COMPLETED')}
                                 color="success"
                               >
@@ -679,7 +688,7 @@ const handleSubmit = async () => {
             </Table>
           )}
         </TableContainer>
-        
+
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
@@ -692,10 +701,10 @@ const handleSubmit = async () => {
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} sur ${count}`}
         />
       </Paper>
-      
+
       {/* Dialogue de création/édition de tournée */}
-      <Dialog 
-        open={openRouteDialog} 
+      <Dialog
+        open={openRouteDialog}
         onClose={handleCloseRouteDialog}
         maxWidth="md"
         fullWidth
@@ -703,9 +712,9 @@ const handleSubmit = async () => {
         <DialogTitle>
           {dialogMode === 'create' ? 'Nouvelle tournée' : 'Modifier la tournée'}
         </DialogTitle>
-        
+
         <Divider />
-        
+
         <DialogContent>
           <Box component="form" sx={{ mt: 1 }}>
             <Grid container spacing={2}>
@@ -723,7 +732,7 @@ const handleSubmit = async () => {
                   disabled={submitting}
                 />
               </Grid>
-              
+
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth required error={!!formErrors.driverId}>
                   <InputLabel id="driver-label">Chauffeur</InputLabel>
@@ -738,7 +747,7 @@ const handleSubmit = async () => {
                   >
                     {getDriversForList().map((driver) => (
                       <MenuItem key={driver.id} value={driver.id}>
-                        {driver.username} 
+                        {driver.username}
                         {driver.vehicleType && ` - ${driver.vehicleType}`}
                       </MenuItem>
                     ))}
@@ -750,7 +759,7 @@ const handleSubmit = async () => {
                   )}
                 </FormControl>
               </Grid>
-              
+
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth required error={!!formErrors.dispatcherId}>
                   <InputLabel id="dispatcher-label">Répartiteur</InputLabel>
@@ -765,7 +774,7 @@ const handleSubmit = async () => {
                   >
                     {dispatchers.map((dispatcher) => (
                       <MenuItem key={dispatcher.id} value={dispatcher.id}>
-                        {dispatcher.username} 
+                        {dispatcher.username}
                         {dispatcher.department && ` - ${dispatcher.department}`}
                       </MenuItem>
                     ))}
@@ -777,7 +786,7 @@ const handleSubmit = async () => {
                   )}
                 </FormControl>
               </Grid>
-              
+
               <Grid item xs={12}>
                 <FormControl fullWidth required error={!!formErrors.deliveryPointIds}>
                   <InputLabel id="delivery-points-label">Points de livraison</InputLabel>
@@ -795,10 +804,10 @@ const handleSubmit = async () => {
                         {selected.map((value) => {
                           const deliveryPoint = deliveryPoints.find(dp => dp.id === value);
                           return (
-                            <Chip 
-                              key={value} 
-                              label={deliveryPoint ? deliveryPoint.clientName : value} 
-                              size="small" 
+                            <Chip
+                              key={value}
+                              label={deliveryPoint ? deliveryPoint.clientName : value}
+                              size="small"
                             />
                           );
                         })}
@@ -820,7 +829,7 @@ const handleSubmit = async () => {
                   )}
                 </FormControl>
               </Grid>
-              
+
               <Grid item xs={12} sm={6}>
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                   <DateTimePicker
@@ -839,7 +848,7 @@ const handleSubmit = async () => {
                   />
                 </LocalizationProvider>
               </Grid>
-              
+
               <Grid item xs={12} sm={6}>
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                   <DateTimePicker
@@ -857,7 +866,7 @@ const handleSubmit = async () => {
                   />
                 </LocalizationProvider>
               </Grid>
-              
+
               <Grid item xs={12}>
                 <FormControl fullWidth>
                   <InputLabel id="status-label">Statut</InputLabel>
@@ -877,7 +886,7 @@ const handleSubmit = async () => {
                   </Select>
                 </FormControl>
               </Grid>
-              
+
               <Grid item xs={12}>
                 <TextField
                   fullWidth
@@ -894,12 +903,12 @@ const handleSubmit = async () => {
             </Grid>
           </Box>
         </DialogContent>
-        
+
         <DialogActions>
           <Button onClick={handleCloseRouteDialog} disabled={submitting}>
             Annuler
           </Button>
-          <Button 
+          <Button
             onClick={handleSubmit}
             variant="contained"
             startIcon={submitting ? <CircularProgress size={20} /> : null}
@@ -909,7 +918,7 @@ const handleSubmit = async () => {
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Dialogue de confirmation de suppression */}
       <Dialog
         open={openDeleteDialog}
@@ -927,14 +936,14 @@ const handleSubmit = async () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={handleCloseDeleteDialog} 
+          <Button
+            onClick={handleCloseDeleteDialog}
             startIcon={<CloseIcon />}
           >
             Annuler
           </Button>
-          <Button 
-            onClick={handleDeleteRoute} 
+          <Button
+            onClick={handleDeleteRoute}
             color="error"
             variant="contained"
             startIcon={<DeleteIcon />}

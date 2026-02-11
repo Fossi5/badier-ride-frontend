@@ -51,16 +51,16 @@ const AdminDashboard = () => {
   const [routes, setRoutes] = useState([]);
   const [deliveryPoints, setDeliveryPoints] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Navigation et alertes
   const navigate = useNavigate();
   const { error } = useAlert();
-  
+
   // Charger les données au montage du composant
   useEffect(() => {
     fetchData();
   }, []);
-  
+
   // Fonction pour charger toutes les données nécessaires
   const fetchData = async () => {
     setLoading(true);
@@ -72,7 +72,7 @@ const AdminDashboard = () => {
         getAllRoutes(),
         getAllDeliveryPoints()
       ]);
-      
+
       setDrivers(driversRes.data);
       setDispatchers(dispatchersRes.data);
       setRoutes(routesRes.data);
@@ -84,23 +84,23 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   };
-  
+
   // Calcul des statistiques
   const getStats = () => {
     // Statistiques des routes
     const activeRoutes = routes.filter(r => r.status === 'IN_PROGRESS').length;
     const plannedRoutes = routes.filter(r => r.status === 'PLANNED').length;
     const completedRoutes = routes.filter(r => r.status === 'COMPLETED').length;
-    
+
     // Statistiques des chauffeurs
     const availableDrivers = drivers.filter(d => d.isAvailable).length;
-    
+
     // Statistiques des livraisons
     const pendingDeliveries = deliveryPoints.filter(d => d.deliveryStatus === 'PENDING').length;
     const inProgressDeliveries = deliveryPoints.filter(d => d.deliveryStatus === 'IN_PROGRESS').length;
     const completedDeliveries = deliveryPoints.filter(d => d.deliveryStatus === 'COMPLETED').length;
     const failedDeliveries = deliveryPoints.filter(d => d.deliveryStatus === 'FAILED').length;
-    
+
     return {
       drivers: {
         total: drivers.length,
@@ -125,11 +125,11 @@ const AdminDashboard = () => {
       }
     };
   };
-  
+
   // Filtres pour les routes du jour
   const getTodayRoutes = () => {
     const today = new Date().toISOString().split('T')[0];
-    return routes.filter(route => 
+    return routes.filter(route =>
       route.startTime && route.startTime.startsWith(today)
     );
   };
@@ -140,12 +140,12 @@ const AdminDashboard = () => {
       .sort((a, b) => new Date(b.plannedTime) - new Date(a.plannedTime))
       .slice(0, 5);
   };
-  
+
   // Calcul des statistiques
   const stats = loading ? null : getStats();
   const todayRoutes = loading ? [] : getTodayRoutes();
   const recentDeliveryPoints = loading ? [] : getRecentDeliveryPoints();
-  
+
   // Fonction pour obtenir la couleur selon le statut
   const getDeliveryStatusColor = (status) => {
     switch (status) {
@@ -159,7 +159,7 @@ const AdminDashboard = () => {
         return 'default';
     }
   };
-  
+
   // Fonction pour obtenir le texte du statut
   const getDeliveryStatusText = (status) => {
     switch (status) {
@@ -182,16 +182,16 @@ const AdminDashboard = () => {
         <Typography variant="h4" gutterBottom>
           Tableau de bord administrateur
         </Typography>
-        
+
         <Tooltip title="Rafraîchir">
-         <span>
-              <IconButton onClick={fetchData} disabled={loading} sx={{ mr: 1 }}>
+          <span>
+            <IconButton onClick={fetchData} disabled={loading} sx={{ mr: 1 }}>
               <RefreshIcon />
-              </IconButton>
-         </span>
-       </Tooltip>
+            </IconButton>
+          </span>
+        </Tooltip>
       </Box>
-      
+
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
           <CircularProgress />
@@ -235,7 +235,7 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             {/* Statistiques répartiteurs */}
             <Grid item xs={12} sm={6} md={3}>
               <Card>
@@ -268,7 +268,7 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             {/* Statistiques tournées */}
             <Grid item xs={12} sm={6} md={3}>
               <Card>
@@ -297,14 +297,14 @@ const AdminDashboard = () => {
                     size="small"
                     fullWidth
                     sx={{ mt: 2 }}
-                    onClick={() => navigate('/dispatcher/routes')}
+                    onClick={() => navigate('/admin/routes')}
                   >
                     Voir les tournées
                   </Button>
                 </CardContent>
               </Card>
             </Grid>
-            
+
             {/* Statistiques livraisons */}
             <Grid item xs={12} sm={6} md={3}>
               <Card>
@@ -342,7 +342,7 @@ const AdminDashboard = () => {
               </Card>
             </Grid>
           </Grid>
-          
+
           <Grid container spacing={4}>
             {/* Tournées du jour */}
             <Grid item xs={12} md={6}>
@@ -351,7 +351,7 @@ const AdminDashboard = () => {
                   Tournées d'aujourd'hui ({todayRoutes.length})
                 </Typography>
                 <Divider sx={{ my: 2 }} />
-                
+
                 {todayRoutes.length === 0 ? (
                   <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 2 }}>
                     Aucune tournée prévue pour aujourd'hui
@@ -364,8 +364,8 @@ const AdminDashboard = () => {
                         divider
                         secondaryAction={
                           <IconButton
-                            edge="end"disabled
-                           // onClick={() => navigate(`/dispatcher/routes/${route.id}`)}
+                            edge="end" disabled
+                          // onClick={() => navigate(`/dispatcher/routes/${route.id}`)}
                           >
                             {route.status === 'COMPLETED' ? (
                               <CheckCircleIcon color="success" />
@@ -389,8 +389,8 @@ const AdminDashboard = () => {
                           secondary={
                             <>
                               <Typography component="span" variant="body2">
-                                Chauffeur: {route.driver.username} • 
-                                Points: {route.deliveryPoints.length} • 
+                                Chauffeur: {route.driver.username} •
+                                Points: {route.deliveryPoints.length} •
                                 Statut: {route.status}
                               </Typography>
                               <br />
@@ -404,11 +404,11 @@ const AdminDashboard = () => {
                     ))}
                   </List>
                 )}
-                
-                
+
+
               </Paper>
             </Grid>
-            
+
             {/* Points de livraison récents */}
             <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3 }}>
@@ -416,7 +416,7 @@ const AdminDashboard = () => {
                   Points de livraison récents
                 </Typography>
                 <Divider sx={{ my: 2 }} />
-                
+
                 {recentDeliveryPoints.length === 0 ? (
                   <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 2 }}>
                     Aucun point de livraison récent
@@ -428,10 +428,10 @@ const AdminDashboard = () => {
                         key={point.id}
                         divider
                         secondaryAction={
-                          <Tooltip title="Voir détails">
+                          <Tooltip title="Voir les points de livraison">
                             <IconButton
                               edge="end"
-                              onClick={() => navigate(`/admin/delivery-points/${point.id}`)}
+                              onClick={() => navigate('/admin/delivery-points')}
                             >
                               <LocationIcon />
                             </IconButton>
@@ -452,7 +452,7 @@ const AdminDashboard = () => {
                               </Typography>
                               <br />
                               <Typography component="span" variant="body2" color="textSecondary">
-                                {point.plannedTime && formatDate(point.plannedTime, 'datetime')} • 
+                                {point.plannedTime && formatDate(point.plannedTime, 'datetime')} •
                                 Statut: {getDeliveryStatusText(point.deliveryStatus)}
                               </Typography>
                             </>
@@ -462,8 +462,8 @@ const AdminDashboard = () => {
                     ))}
                   </List>
                 )}
-                
-                
+
+
               </Paper>
             </Grid>
           </Grid>

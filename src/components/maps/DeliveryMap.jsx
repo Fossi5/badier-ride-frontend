@@ -78,6 +78,57 @@ const deliveryIcons = {
   }),
 };
 
+const STATUS_COLORS = {
+  PENDING: '#6b7280',
+  IN_PROGRESS: '#f97316',
+  COMPLETED: '#22c55e',
+  FAILED: '#ef4444'
+};
+
+const createNumberedIcon = (label, status = 'PENDING', isNextStop = false) => {
+  const safeLabel = label != null ? label : '?';
+  const borderColor = STATUS_COLORS[status] || STATUS_COLORS.PENDING;
+  const background = isNextStop ? borderColor : '#ffffff';
+  const textColor = isNextStop ? '#ffffff' : borderColor;
+  const halo = isNextStop
+    ? 'box-shadow:0 0 0 8px rgba(37,99,235,0.18),0 4px 12px rgba(0,0,0,0.35);'
+    : 'box-shadow:0 4px 10px rgba(0,0,0,0.25);';
+
+  return L.divIcon({
+    className: 'delivery-number-icon',
+    html: `
+      <div style="
+        width:34px;
+        height:34px;
+        border-radius:17px;
+        border:3px solid ${borderColor};
+        background:${background};
+        color:${textColor};
+        font-size:14px;
+        font-weight:700;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        ${halo}
+      ">
+        ${safeLabel}
+      </div>
+      <div style="
+        width:0;
+        height:0;
+        border-left:6px solid transparent;
+        border-right:6px solid transparent;
+        border-top:10px solid ${borderColor};
+        margin:0 auto;
+        transform:translateY(-2px);
+      "></div>
+    `,
+    iconSize: [34, 40],
+    iconAnchor: [17, 36],
+    popupAnchor: [0, -34]
+  });
+};
+
 // Composant pour suivre la position de l'utilisateur
 const LocationMarker = ({ onLocationUpdate, onPositionChange }) => {
   const [position, setPosition] = useState(null);
@@ -154,6 +205,7 @@ const DeliveryMap = ({
   const [routeSegments, setRouteSegments] = useState([]); // Segments colorés pour l'itinéraire calculé
   const [fallbackSegments, setFallbackSegments] = useState([]); // Segments colorés pour ligne directe
   const [mapInstance, setMapInstance] = useState(null);
+  const [nextStopIndex, setNextStopIndex] = useState(-1);
 
   useEffect(() => {
     if (!route || !route.deliveryPoints) {
@@ -189,10 +241,25 @@ const DeliveryMap = ({
             time: point.plannedTime,
             actualTime: point.actualTime,
             phone: point.clientPhoneNumber,
-            notes: point.clientNote
+            notes: point.clientNote,
+            sequenceOrder: typeof point.sequenceOrder === 'number' ? point.sequenceOrder : points.length
           });
         }
       }
+
+      points.sort((a, b) => {
+        const orderA = typeof a.sequenceOrder === 'number' ? a.sequenceOrder : Number.MAX_SAFE_INTEGER;
+        const orderB = typeof b.sequenceOrder === 'number' ? b.sequenceOrder : Number.MAX_SAFE_INTEGER;
+        if (orderA === orderB) {
+          const nameA = a.clientName || '';
+          const nameB = b.clientName || '';
+          return nameA.localeCompare(nameB);
+        }
+        return orderA - orderB;
+      });
+
+      const firstPendingIndex = points.findIndex((p) => p.status !== 'COMPLETED' && p.status !== 'FAILED');
+      setNextStopIndex(firstPendingIndex === -1 ? (points.length ? points.length - 1 : -1) : firstPendingIndex);
 
       setRoutePoints(points);
       setGeocoding(false);
@@ -305,6 +372,11 @@ const DeliveryMap = ({
     }
   };
 
+  const nextStop = (nextStopIndex >= 0 && nextStopIndex < routePoints.length)
+    ? routePoints[nextStopIndex]
+    : null;
+
+
   // Fonction pour recentrer sur la position du chauffeur
   const handleRecenterOnDriver = () => {
     if (driverPosition && mapInstance) {
@@ -312,6 +384,26 @@ const DeliveryMap = ({
         duration: 1
       });
     }
+  };
+
+  const getSegmentVisualProps = (segmentIndex, totalSegments) => {
+    if (totalSegments <= 0) {
+      return { opacity: 0.8, weight: 5 };
+    }
+
+    const normalizedSegment = totalSegments === 1 ? 0 : segmentIndex / (totalSegments - 1);
+    const totalStops = routePoints.length > 1 ? routePoints.length - 1 : 1;
+    const progressRatio = nextStopIndex < 0 ? 1 : Math.min(nextStopIndex / totalStops, 1);
+
+    if (normalizedSegment < progressRatio - 0.05) {
+      return { opacity: 0.25, weight: 3 };
+    }
+
+    if (Math.abs(normalizedSegment - progressRatio) <= 0.05) {
+      return { opacity: 1, weight: 6 };
+    }
+
+    return { opacity: 0.6, weight: 4 };
   };
 
   // Actions du Speed Dial pour la navigation
@@ -363,32 +455,38 @@ const DeliveryMap = ({
         {/* Tracer l'itinéraire routier calculé avec segments colorés */}
         {routeGeometry && routeGeometry.length > 1 && routeSegments.length > 0 && (
           <>
-            {routeSegments.map((segment, index) => (
-              <Polyline
-                key={`route-segment-${index}`}
-                positions={segment.positions}
-                color={segment.color}
-                weight={5}
-                opacity={0.8}
-                lineJoin="round"
-              />
-            ))}
+            {routeSegments.map((segment, index) => {
+              const style = getSegmentVisualProps(segment.index ?? index, routeSegments.length);
+              return (
+                <Polyline
+                  key={`route-segment-${index}`}
+                  positions={segment.positions}
+                  color={segment.color}
+                  weight={style.weight}
+                  opacity={style.opacity}
+                  lineJoin="round"
+                />
+              );
+            })}
           </>
         )}
 
         {/* Si pas d'itinéraire calculé, afficher ligne droite de secours avec segments colorés */}
         {!routeGeometry && routePoints.length > 1 && fallbackSegments.length > 0 && (
           <>
-            {fallbackSegments.map((segment, index) => (
-              <Polyline
-                key={`fallback-segment-${index}`}
-                positions={segment.positions}
-                color={segment.color}
-                weight={4}
-                opacity={0.6}
-                dashArray="5, 10"
-              />
-            ))}
+            {fallbackSegments.map((segment, index) => {
+              const style = getSegmentVisualProps(segment.index ?? index, fallbackSegments.length);
+              return (
+                <Polyline
+                  key={`fallback-segment-${index}`}
+                  positions={segment.positions}
+                  color={segment.color}
+                  weight={Math.max(style.weight - 1, 2)}
+                  opacity={style.opacity}
+                  dashArray="5, 10"
+                />
+              );
+            })}
           </>
         )}
 
@@ -421,96 +519,135 @@ const DeliveryMap = ({
           </Box>
         )}
 
-        {/* Points de livraison */}
-        {routePoints.map((point, index) => (
-          <Marker
-            key={point.id}
-            position={point.position}
-            icon={deliveryIcons[point.status] || DefaultIcon}
+        {nextStop && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              bgcolor: 'white',
+              p: 1.5,
+              borderRadius: 1,
+              boxShadow: 2,
+              zIndex: 1000,
+              minWidth: 180
+            }}
           >
-            <Popup>
-              <Box sx={{ minWidth: 200 }}>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  #{index + 1} - {point.clientName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {point.address}
-                </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Prochain arrêt
+            </Typography>
+            <Typography variant="body2" fontWeight="bold">
+              #{nextStopIndex + 1} - {nextStop.clientName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {nextStop.address}
+            </Typography>
+          </Box>
+        )}
 
-                <Box sx={{ mt: 1, mb: 1 }}>
-                  <Chip
-                    size="small"
-                    label={point.status}
-                    color={
-                      point.status === 'COMPLETED' ? 'success' :
-                        point.status === 'IN_PROGRESS' ? 'warning' :
-                          point.status === 'FAILED' ? 'error' : 'default'
-                    }
-                  />
-                </Box>
+        {/* Points de livraison */}
+        {routePoints.map((point, index) => {
+          const isNextStopMarker = nextStopIndex === index;
+          const markerIcon = createNumberedIcon(index + 1, point.status, isNextStopMarker);
 
-                {point.time && (
-                  <Typography variant="body2">
-                    <strong>Heure prévue:</strong> {new Date(point.time).toLocaleTimeString()}
+          return (
+            <Marker
+              key={point.id}
+              position={point.position}
+              icon={markerIcon}
+            >
+              <Popup>
+                <Box sx={{ minWidth: 200 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    #{index + 1} - {point.clientName}
                   </Typography>
-                )}
-
-                {point.phone && (
-                  <Typography variant="body2">
-                    <strong>Tel:</strong> {point.phone}
+                  <Typography variant="body2" color="text.secondary">
+                    {point.address}
                   </Typography>
-                )}
 
-                {point.notes && (
-                  <Typography variant="body2">
-                    <strong>Notes:</strong> {point.notes}
-                  </Typography>
-                )}
+                  <Box sx={{ mt: 1, mb: 1 }}>
+                    <Chip
+                      size="small"
+                      label={point.status}
+                      color={
+                        point.status === 'COMPLETED' ? 'success' :
+                          point.status === 'IN_PROGRESS' ? 'warning' :
+                            point.status === 'FAILED' ? 'error' : 'default'
+                      }
+                    />
+                    {isNextStopMarker && (
+                      <Chip
+                        size="small"
+                        label="Prochain arrêt"
+                        color="info"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
+                  </Box>
 
-                {/* Boutons d'action pour mettre à jour le statut */}
-                {point.status !== 'COMPLETED' && point.status !== 'FAILED' && (
-                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
+                  {point.time && (
+                    <Typography variant="body2">
+                      <strong>Heure prévue:</strong> {new Date(point.time).toLocaleTimeString()}
+                    </Typography>
+                  )}
+
+                  {point.phone && (
+                    <Typography variant="body2">
+                      <strong>Tel:</strong> {point.phone}
+                    </Typography>
+                  )}
+
+                  {point.notes && (
+                    <Typography variant="body2">
+                      <strong>Notes:</strong> {point.notes}
+                    </Typography>
+                  )}
+
+                  {/* Boutons d'action pour mettre à jour le statut */}
+                  {point.status !== 'COMPLETED' && point.status !== 'FAILED' && (
+                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="success"
+                        startIcon={<CheckCircleIcon />}
+                        onClick={() => handleStatusUpdate(point.id, 'COMPLETED')}
+                        disabled={loading}
+                      >
+                        Livré
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="error"
+                        startIcon={<CancelIcon />}
+                        onClick={() => handleStatusUpdate(point.id, 'FAILED')}
+                        disabled={loading}
+                      >
+                        Échec
+                      </Button>
+                    </Box>
+                  )}
+
+                  {/* Bouton pour ouvrir Google Maps */}
+                  <Box sx={{ mt: 2 }}>
                     <Button
                       size="small"
-                      variant="contained"
-                      color="success"
-                      startIcon={<CheckCircleIcon />}
-                      onClick={() => handleStatusUpdate(point.id, 'COMPLETED')}
-                      disabled={loading}
+                      fullWidth
+                      variant="outlined"
+                      color="primary"
+                      startIcon={<DirectionsIcon />}
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${point.position[0]},${point.position[1]}`}
+                      target="_blank"
                     >
-                      Livré
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="error"
-                      startIcon={<CancelIcon />}
-                      onClick={() => handleStatusUpdate(point.id, 'FAILED')}
-                      disabled={loading}
-                    >
-                      Échec
+                      Itinéraire
                     </Button>
                   </Box>
-                )}
-
-                {/* Bouton pour ouvrir Google Maps */}
-                <Box sx={{ mt: 2 }}>
-                  <Button
-                    size="small"
-                    fullWidth
-                    variant="outlined"
-                    color="primary"
-                    startIcon={<DirectionsIcon />}
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${point.position[0]},${point.position[1]}`}
-                    target="_blank"
-                  >
-                    Itinéraire
-                  </Button>
                 </Box>
-              </Box>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
 
       {/* Overlay pour l'indicateur de chargement ou géocodage */}

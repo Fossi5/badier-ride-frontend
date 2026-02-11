@@ -1,5 +1,6 @@
 // src/pages/dispatcher/ManageDeliveryPoints.jsx
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -74,6 +75,9 @@ const ManageDeliveryPoints = () => {
 
   // Hooks et contextes
   const { success, error } = useAlert();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const shouldAutoOpenDialog = location.state?.openCreateDialog;
 
   // Charger les données au montage du composant
   useEffect(() => {
@@ -88,6 +92,13 @@ const ManageDeliveryPoints = () => {
       fetchAllDeliveryPoints();
     }
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (!loading && shouldAutoOpenDialog) {
+      handleOpenCreateDialog();
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [loading, shouldAutoOpenDialog, location.pathname, navigate]);
 
   // Fonction pour charger toutes les données nécessaires
   const fetchData = async () => {
