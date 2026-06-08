@@ -6,6 +6,11 @@ export const getAllDrivers = () => {
   return api.get('/admin/drivers');
 };
 
+// Récupérer les chauffeurs paginés
+export const getDriversPaged = (page = 0, size = 20) => {
+  return api.get(`/admin/drivers/paged?page=${page}&size=${size}`);
+};
+
 export const getDriverById = (id) => {
   return api.get(`/admin/drivers/${id}`);
 };

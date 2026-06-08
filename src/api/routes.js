@@ -6,6 +6,11 @@ export const getAllRoutes = () => {
   return api.get("/routes");
 };
 
+// Récupérer les routes paginées
+export const getRoutesPaged = (page = 0, size = 20) => {
+  return api.get(`/routes/paged?page=${page}&size=${size}`);
+};
+
 // Récupérer une route spécifique
 export const getRouteById = (id) => {
   return api.get(`/routes/${id}`);

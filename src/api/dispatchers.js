@@ -6,6 +6,11 @@ export const getAllDispatchers = () => {
   return api.get('/admin/dispatchers');
 };
 
+// Récupérer les répartiteurs paginés
+export const getDispatchersPaged = (page = 0, size = 20) => {
+  return api.get(`/admin/dispatchers/paged?page=${page}&size=${size}`);
+};
+
 export const getDispatcherById = (id) => {
   return api.get(`/admin/dispatchers/${id}`);
 };

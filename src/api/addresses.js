@@ -6,6 +6,11 @@ export const getAllAddresses = () => {
   return api.get("/addresses");
 };
 
+// Récupérer les adresses paginées
+export const getAddressesPaged = (page = 0, size = 20) => {
+  return api.get(`/addresses/paged?page=${page}&size=${size}`);
+};
+
 // Récupérer une adresse spécifique
 export const getAddressById = (id) => {
   return api.get(`/addresses/${id}`);

@@ -6,6 +6,11 @@ export const getAllDeliveryPoints = () => {
   return api.get("/delivery-points");
 };
 
+// Récupérer les points de livraison paginés
+export const getDeliveryPointsPaged = (page = 0, size = 20) => {
+  return api.get(`/delivery-points/paged?page=${page}&size=${size}`);
+};
+
 // Récupérer un point de livraison spécifique
 export const getDeliveryPointById = (id) => {
   return api.get(`/delivery-points/${id}`);

@@ -4,54 +4,21 @@ import {
   Container,
   Typography,
   Box,
-  Paper,
   Button,
   IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
-  CircularProgress,
-  Divider,
   Tooltip,
   Alert,
   AlertTitle
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  Route as RouteIcon,
-  Map as MapIcon,
-  Close as CloseIcon,
-  DirectionsCar as DriverIcon,
-  Person as DispatcherIcon,
-  Schedule as ScheduleIcon
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // Import des services API
 import {
-  getAllRoutes,
+  getRoutesPaged,
   createRoute,
   updateRoute,
   deleteRoute,
@@ -66,6 +33,11 @@ import { getAllDeliveryPoints } from '../../api/deliveryPoints';
 import { useAlert } from '../../context/AlertContext';
 import { useAuth } from '../../context/AuthContext';
 
+// Import des sous-composants
+import RouteTable from './components/RouteTable';
+import RouteFormDialog from './components/RouteFormDialog';
+import DeleteConfirmDialog from './components/DeleteConfirmDialog';
+
 const ManageRoutes = () => {
   const [routes, setRoutes] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -74,7 +46,9 @@ const ManageRoutes = () => {
   const [deliveryPoints, setDeliveryPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   // Ã‰tats pour les erreurs d'autorisations
   const [authErrors, setAuthErrors] = useState({
@@ -111,10 +85,15 @@ const ManageRoutes = () => {
   const { success, error, } = useAlert();
   const { currentUser } = useAuth();
 
-  // Charger les donnÃ©es au montage du composant
+  // Charger les données au montage du composant (drivers, dispatchers, delivery points)
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Recharger les routes quand la page ou le nombre de lignes change
+  useEffect(() => {
+    fetchRoutes();
+  }, [page, rowsPerPage]);
 
   useEffect(() => {
     if (!loading && shouldAutoOpenCreateDialog) {
@@ -123,31 +102,38 @@ const ManageRoutes = () => {
     }
   }, [loading, shouldAutoOpenCreateDialog, location.pathname, navigate]);
 
-  // Fonction pour charger toutes les donnÃ©es nÃ©cessaires
-  const fetchData = async () => {
+  // Fonction pour charger uniquement les tournées (paginées)
+  const fetchRoutes = async () => {
     setLoading(true);
-
-    // RÃ©initialiser les erreurs d'autorisation
-    setAuthErrors({
-      driversError: false,
-      dispatchersError: false,
-      routesError: false
-    });
-
-    // Charger les tournÃ©es
+    setAuthErrors(prev => ({ ...prev, routesError: false }));
     try {
-      const routesRes = await getAllRoutes();
-      setRoutes(routesRes.data);
+      const routesRes = await getRoutesPaged(page, rowsPerPage);
+      setRoutes(routesRes.data.content);
+      setTotalElements(routesRes.data.totalElements);
+      setTotalPages(routesRes.data.totalPages);
     } catch (err) {
       if (err.response?.status === 403) {
         setAuthErrors(prev => ({ ...prev, routesError: true }));
-        error("Vous n'avez pas l'autorisation d'accÃ©der aux tournÃ©es");
+        error("Vous n'avez pas l'autorisation d'accéder aux tournées");
       } else {
-        error('Erreur lors du chargement des tournÃ©es: ' + (err.response?.data?.error || err.message));
+        error('Erreur lors du chargement des tournées: ' + (err.response?.data?.error || err.message));
       }
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Charger les points de livraison
+  // Fonction pour charger les données de référence (drivers, dispatchers, points de livraison)
+  // Les tournées sont chargées séparément via fetchRoutes (useEffect sur page/rowsPerPage)
+  const fetchData = async () => {
+    // Réinitialiser les erreurs d'autorisation non liées aux routes
+    setAuthErrors(prev => ({
+      ...prev,
+      driversError: false,
+      dispatchersError: false
+    }));
+
+    // Charger les points de livraison (complets, pour les selects du formulaire)
     try {
       const deliveryPointsRes = await getAllDeliveryPoints();
       setDeliveryPoints(deliveryPointsRes.data);
@@ -155,26 +141,26 @@ const ManageRoutes = () => {
       error('Erreur lors du chargement des points de livraison: ' + (err.response?.data?.error || err.message));
     }
 
-    // Charger les chauffeurs disponibles
+    // Charger les chauffeurs disponibles (complets, pour les selects)
     try {
       const availableDriversRes = await getAvailableDrivers();
       setAvailableDrivers(availableDriversRes.data);
     } catch (err) {
       if (err.response?.status === 403) {
         setAuthErrors(prev => ({ ...prev, driversError: true }));
-        // Pas d'accÃ¨s aux chauffeurs disponibles : fallback sur la liste complÃ¨te des chauffeurs
+        // Pas d'accès aux chauffeurs disponibles : fallback sur la liste complète des chauffeurs
         try {
           const driversRes = await getAllDrivers();
           setDrivers(driversRes.data);
         } catch (driverErr) {
-          // Ã‰chec du fallback chauffeurs : aucune liste disponible
+          // Échec du fallback chauffeurs : aucune liste disponible
         }
       } else {
         error('Erreur lors du chargement des chauffeurs disponibles: ' + (err.response?.data?.error || err.message));
       }
     }
 
-    // Charger les rÃ©partiteurs
+    // Charger les répartiteurs (complets, pour les selects)
     try {
       const dispatchersRes = await getAllDispatchers();
       setDispatchers(dispatchersRes.data);
@@ -182,14 +168,12 @@ const ManageRoutes = () => {
       if (err.response?.status === 403) {
         setAuthErrors(prev => ({ ...prev, dispatchersError: true }));
       } else {
-        error('Erreur lors du chargement des rÃ©partiteurs: ' + (err.response?.data?.error || err.message));
+        error('Erreur lors du chargement des répartiteurs: ' + (err.response?.data?.error || err.message));
       }
     }
-
-    setLoading(false);
   };
 
-  // Gestion du changement de page
+  // Gestion du changement de page (côté serveur)
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -373,7 +357,7 @@ const ManageRoutes = () => {
       }
 
       handleCloseRouteDialog();
-      fetchData();
+      fetchRoutes();
     } catch (err) {
       error(`Erreur lors de la ${dialogMode === 'create' ? 'crÃ©ation' : 'mise Ã  jour'} de la tournÃ©e: ` + (err.response?.data?.error || err.message));
     } finally {
@@ -403,7 +387,7 @@ const ManageRoutes = () => {
 
       // Fermer le dialogue et rafraÃ®chir la liste
       handleCloseDeleteDialog();
-      fetchData();
+      fetchRoutes();
     } catch (err) {
       if (err.response?.status === 403) {
         error("Vous n'avez pas l'autorisation de supprimer une tournÃ©e");
@@ -418,7 +402,7 @@ const ManageRoutes = () => {
     try {
       await updateRouteStatus(routeId, newStatus);
       success(`Statut de la tournÃ©e mis Ã  jour: ${newStatus}`);
-      fetchData();
+      fetchRoutes();
     } catch (err) {
       if (err.response?.status === 403) {
         error("Vous n'avez pas l'autorisation de modifier le statut d'une tournÃ©e");
@@ -469,7 +453,7 @@ const ManageRoutes = () => {
 
         <Box>
           <Tooltip title="RafraÃ®chir">
-            <IconButton onClick={fetchData} disabled={loading} sx={{ mr: 1 }}>
+            <IconButton onClick={() => { fetchData(); fetchRoutes(); }} disabled={loading} sx={{ mr: 1 }}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
@@ -485,388 +469,45 @@ const ManageRoutes = () => {
         </Box>
       </Box>
 
-      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-        <TableContainer sx={{ maxHeight: 600 }}>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
-              <CircularProgress />
-            </Box>
-          ) : routes.length === 0 ? (
-            <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Typography>Aucune tournÃ©e disponible</Typography>
-            </Box>
-          ) : (
-            <Table stickyHeader aria-label="table des tournÃ©es">
-              <TableHead>
-                <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Nom</TableCell>
-                  <TableCell>Chauffeur</TableCell>
-                  <TableCell>RÃ©partiteur</TableCell>
-                  <TableCell>Statut</TableCell>
-                  <TableCell>Points</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {routes
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((route) => (
-                    <TableRow key={route.id} hover>
-                      <TableCell>{route.id}</TableCell>
-                      <TableCell>{route.name}</TableCell>
-                      <TableCell>{route.driver?.username || 'Non assignÃ©'}</TableCell>
-                      <TableCell>{route.dispatcher?.username || 'Non assignÃ©'}</TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={route.status}
-                          color={
-                            route.status === 'COMPLETED' ? 'success' :
-                              route.status === 'IN_PROGRESS' ? 'primary' :
-                                route.status === 'CANCELLED' ? 'error' : 'default'
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>{route.deliveryPoints?.length || 0}</TableCell>
-                      <TableCell>
-                        {route.startTime ? format(new Date(route.startTime), 'dd/MM/yyyy HH:mm') : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex' }}>
-                          <Tooltip title="Modifier">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenEditDialog(route)}
-                                disabled={!canEditRoute(route)}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
 
-                          <Tooltip title="Supprimer">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenDeleteDialog(route)}
-                                disabled={!canEditRoute(route) || route.status === 'IN_PROGRESS'}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
+      <RouteTable
+        routes={routes}
+        loading={loading}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalElements={totalElements}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        onEdit={handleOpenEditDialog}
+        onDelete={handleOpenDeleteDialog}
+        onOptimize={handleOptimizeRoute}
+        onUpdateStatus={handleUpdateStatus}
+        canEditRoute={canEditRoute}
+      />
 
-                          <Tooltip title="Optimiser">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOptimizeRoute(route.id)}
-                                disabled={route.status === 'COMPLETED' || route.status === 'CANCELLED'}
-                              >
-                                <MapIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-
-                          {canEditRoute(route) && route.status === 'PLANNED' && (
-                            <Tooltip title="DÃ©marrer">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleUpdateStatus(route.id, 'IN_PROGRESS')}
-                                color="primary"
-                              >
-                                <RouteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-
-                          {canEditRoute(route) && route.status === 'IN_PROGRESS' && (
-                            <Tooltip title="Terminer">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleUpdateStatus(route.id, 'COMPLETED')}
-                                color="success"
-                              >
-                                <RouteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          )}
-        </TableContainer>
-
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
-          component="div"
-          count={routes.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Lignes par page:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} sur ${count}`}
-        />
-      </Paper>
-
-      {/* Dialogue de crÃ©ation/Ã©dition de tournÃ©e */}
-      <Dialog
+      <RouteFormDialog
         open={openRouteDialog}
         onClose={handleCloseRouteDialog}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          {dialogMode === 'create' ? 'Nouvelle tournÃ©e' : 'Modifier la tournÃ©e'}
-        </DialogTitle>
+        onSubmit={handleSubmit}
+        dialogMode={dialogMode}
+        formData={formData}
+        formErrors={formErrors}
+        submitting={submitting}
+        drivers={getDriversForList()}
+        dispatchers={dispatchers}
+        deliveryPoints={deliveryPoints}
+        authErrors={authErrors}
+        currentUserRole={currentUser?.role}
+        onFormChange={handleFormChange}
+        onDateChange={handleDateChange}
+      />
 
-        <Divider />
-
-        <DialogContent>
-          <Box component="form" sx={{ mt: 1 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  id="name"
-                  label="Nom de la tournÃ©e"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleFormChange}
-                  error={!!formErrors.name}
-                  helperText={formErrors.name}
-                  disabled={submitting}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required error={!!formErrors.driverId}>
-                  <InputLabel id="driver-label">Chauffeur</InputLabel>
-                  <Select
-                    labelId="driver-label"
-                    id="driverId"
-                    name="driverId"
-                    value={formData.driverId}
-                    onChange={handleFormChange}
-                    label="Chauffeur"
-                    disabled={submitting || authErrors.driversError}
-                  >
-                    {getDriversForList().map((driver) => (
-                      <MenuItem key={driver.id} value={driver.id}>
-                        {driver.username}
-                        {driver.vehicleType && ` - ${driver.vehicleType}`}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formErrors.driverId && (
-                    <Typography variant="caption" color="error">
-                      {formErrors.driverId}
-                    </Typography>
-                  )}
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required error={!!formErrors.dispatcherId}>
-                  <InputLabel id="dispatcher-label">RÃ©partiteur</InputLabel>
-                  <Select
-                    labelId="dispatcher-label"
-                    id="dispatcherId"
-                    name="dispatcherId"
-                    value={formData.dispatcherId}
-                    onChange={handleFormChange}
-                    label="RÃ©partiteur"
-                    disabled={submitting || (currentUser?.role === 'DISPATCHER') || authErrors.dispatchersError}
-                  >
-                    {dispatchers.map((dispatcher) => (
-                      <MenuItem key={dispatcher.id} value={dispatcher.id}>
-                        {dispatcher.username}
-                        {dispatcher.department && ` - ${dispatcher.department}`}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formErrors.dispatcherId && (
-                    <Typography variant="caption" color="error">
-                      {formErrors.dispatcherId}
-                    </Typography>
-                  )}
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12}>
-                <FormControl fullWidth required error={!!formErrors.deliveryPointIds}>
-                  <InputLabel id="delivery-points-label">Points de livraison</InputLabel>
-                  <Select
-                    labelId="delivery-points-label"
-                    id="deliveryPointIds"
-                    name="deliveryPointIds"
-                    multiple
-                    value={formData.deliveryPointIds}
-                    onChange={handleFormChange}
-                    label="Points de livraison"
-                    disabled={submitting}
-                    renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {selected.map((value) => {
-                          const deliveryPoint = deliveryPoints.find(dp => dp.id === value);
-                          return (
-                            <Chip
-                              key={value}
-                              label={deliveryPoint ? deliveryPoint.clientName : value}
-                              size="small"
-                            />
-                          );
-                        })}
-                      </Box>
-                    )}
-                  >
-                    {deliveryPoints
-                      .filter(dp => dp.deliveryStatus !== 'COMPLETED' && dp.deliveryStatus !== 'FAILED')
-                      .map((dp) => (
-                        <MenuItem key={dp.id} value={dp.id}>
-                          {dp.clientName} - {dp.address?.street}, {dp.address?.city}
-                        </MenuItem>
-                      ))}
-                  </Select>
-                  {formErrors.deliveryPointIds && (
-                    <Typography variant="caption" color="error">
-                      {formErrors.deliveryPointIds}
-                    </Typography>
-                  )}
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DateTimePicker
-                    label="Date et heure de dÃ©but"
-                    value={formData.startTime}
-                    onChange={(date) => handleDateChange('startTime', date)}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        required: true,
-                        error: !!formErrors.startTime,
-                        helperText: formErrors.startTime,
-                        disabled: submitting
-                      }
-                    }}
-                  />
-                </LocalizationProvider>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DateTimePicker
-                    label="Date et heure de fin (optionnel)"
-                    value={formData.endTime}
-                    onChange={(date) => handleDateChange('endTime', date)}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        error: !!formErrors.endTime,
-                        helperText: formErrors.endTime,
-                        disabled: submitting
-                      }
-                    }}
-                  />
-                </LocalizationProvider>
-              </Grid>
-
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel id="status-label">Statut</InputLabel>
-                  <Select
-                    labelId="status-label"
-                    id="status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleFormChange}
-                    label="Statut"
-                    disabled={submitting}
-                  >
-                    <MenuItem value="PLANNED">PlanifiÃ©e</MenuItem>
-                    <MenuItem value="IN_PROGRESS">En cours</MenuItem>
-                    <MenuItem value="COMPLETED">TerminÃ©e</MenuItem>
-                    <MenuItem value="CANCELLED">AnnulÃ©e</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  id="notes"
-                  label="Notes"
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleFormChange}
-                  multiline
-                  rows={4}
-                  disabled={submitting}
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={handleCloseRouteDialog} disabled={submitting}>
-            Annuler
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            startIcon={submitting ? <CircularProgress size={20} /> : null}
-            disabled={submitting}
-          >
-            {dialogMode === 'create' ? 'CrÃ©er' : 'Mettre Ã  jour'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialogue de confirmation de suppression */}
-      <Dialog
+      <DeleteConfirmDialog
         open={openDeleteDialog}
         onClose={handleCloseDeleteDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">
-          Confirmer la suppression
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
-            ÃŠtes-vous sÃ»r de vouloir supprimer la tournÃ©e <strong>{routeToDelete?.name}</strong> ?
-            Cette action est irrÃ©versible.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleCloseDeleteDialog}
-            startIcon={<CloseIcon />}
-          >
-            Annuler
-          </Button>
-          <Button
-            onClick={handleDeleteRoute}
-            color="error"
-            variant="contained"
-            startIcon={<DeleteIcon />}
-            autoFocus
-          >
-            Supprimer
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleDeleteRoute}
+        routeName={routeToDelete?.name}
+      />
     </Container>
   );
 };
