@@ -1,8 +1,7 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
-import { login as apiLogin } from '../api/auth';
+import { login as apiLogin, logout as apiLogout } from '../api/auth';
 
 // Création du contexte
 const AuthContext = createContext(null);
@@ -19,23 +18,17 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   // Vérifier si un utilisateur est déjà connecté au chargement
+  // Le token JWT est dans un cookie httpOnly (inaccessible depuis JS)
+  // On restaure uniquement les métadonnées de l'utilisateur depuis localStorage
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('userRole');
-
-    if (token && role) {
-      // Extraire le nom d'utilisateur du token
-      let decodedToken = null;
+    const savedUser = localStorage.getItem('userInfo');
+    if (savedUser) {
       try {
-        decodedToken = jwtDecode(token);
+        setCurrentUser(JSON.parse(savedUser));
       } catch (e) {
-        // Token JWT malformé ou invalide
+        localStorage.removeItem('userInfo');
       }
-      const username = decodedToken ? decodedToken.sub : null;
-      
-      setCurrentUser({ token, role, username });
     }
-
     setLoading(false);
   }, []);
 
@@ -43,23 +36,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       const response = await apiLogin({ username, password });
-      const { token, role } = response.data;
+      const { username: returnedUsername, role } = response.data;
 
-      // Stocker les informations dans le localStorage
-      localStorage.setItem('token', token);
-      localStorage.setItem('userRole', role);
-
-      // Extraire le nom d'utilisateur du token
-      let decodedToken = null;
-      try {
-        decodedToken = jwtDecode(token);
-      } catch (e) {
-        // Token JWT malformé ou invalide
-      }
-      const extractedUsername = decodedToken ? decodedToken.sub : null;
-
-      // Mettre à jour l'état avec le nom d'utilisateur
-      setCurrentUser({ token, role, username: extractedUsername });
+      // Stocker uniquement les métadonnées (pas le token — il est dans un cookie httpOnly)
+      const userInfo = { username: returnedUsername, role };
+      localStorage.setItem('userInfo', JSON.stringify(userInfo));
+      setCurrentUser(userInfo);
 
       // Redirection basée sur le rôle
       if (role === 'ADMIN') {
@@ -77,11 +59,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Fonction de déconnexion
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    setCurrentUser(null);
-    navigate('/login');
+  const logout = async () => {
+    try {
+      // Demander au backend d'effacer le cookie httpOnly
+      await apiLogout();
+    } catch (e) {
+      // Ignorer les erreurs réseau lors du logout
+    } finally {
+      localStorage.removeItem('userInfo');
+      setCurrentUser(null);
+      navigate('/login');
+    }
   };
 
   // Vérifier si l'utilisateur a un rôle spécifique

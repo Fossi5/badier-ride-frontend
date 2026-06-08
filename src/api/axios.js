@@ -8,59 +8,18 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000, // Ajouter un timeout de 10 secondes
+  timeout: 10000,
+  // Envoie automatiquement les cookies (dont le cookie httpOnly "jwt") avec chaque requête
+  withCredentials: true,
 });
 
-// Intercepteur pour ajouter le token JWT à chaque requête
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
-
 // Intercepteur pour gérer les erreurs d'authentification et réseau
-/*api.interceptors.response.use(
-  response => {
-    console.log('Réponse reçue:', response.status, response.config.url);
-    return response;
-  },
-  error => {
-    if (error.response) {
-      // La requête a été faite et le serveur a répondu avec un code de statut hors de la plage 2xx
-      console.error('Erreur de réponse:', error.response.status, error.response.data);
-      
-      if (error.response.status === 401) {
-        // Token expiré ou invalide
-        localStorage.removeItem('token');
-        localStorage.removeItem('userRole');
-        window.location.href = '/login';
-      }
-    } else if (error.request) {
-      // La requête a été faite mais aucune réponse n'a été reçue
-      console.error('Erreur réseau - Aucune réponse reçue:', error.request);
-      error.customMessage = "Impossible de communiquer avec le serveur. Vérifiez votre connexion internet et que le serveur backend est bien démarré.";
-    } else {
-      // Une erreur s'est produite lors de la configuration de la requête
-      console.error('Erreur de configuration de la requête:', error.message);
-    }
-    
-    return Promise.reject(error);
-  }
-);*/
 api.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
     if (error.response) {
-      // Ne déconnecter que si c'est vraiment une erreur d'authentification
       if (error.response.status === 401) {
         const errorMessage =
           error.response.data?.message || error.response.data?.error || "";
@@ -73,19 +32,17 @@ api.interceptors.response.use(
           errorMessage.toLowerCase().includes("unauthorized") ||
           error.config.url.includes("/auth/")
         ) {
-          // Token expiré ou invalide : nettoyage du localStorage et redirection vers login
-          localStorage.removeItem("token");
-          localStorage.removeItem("userRole");
+          // Session expirée : nettoyage des métadonnées et redirection vers login
+          localStorage.removeItem("userInfo");
           window.location.href = "/login";
         }
-        // Sinon, erreur 401 liée aux permissions (pas au token) : on laisse le composant gérer l'erreur
+        // Sinon, erreur 401 liée aux permissions : on laisse le composant gérer l'erreur
       }
     } else if (error.request) {
-      // La requête a été faite mais aucune réponse n'a été reçue (problème réseau ou serveur injoignable)
+      // La requête a été faite mais aucune réponse n'a été reçue (problème réseau)
       error.customMessage =
         "Impossible de communiquer avec le serveur. Vérifiez votre connexion internet et que le serveur backend est bien démarré.";
     }
-    // Sinon, erreur lors de la configuration de la requête elle-même
 
     return Promise.reject(error);
   },

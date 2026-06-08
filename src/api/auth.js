@@ -10,18 +10,18 @@ export const register = (userData) => {
 };
 
 export const getCurrentUser = () => {
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('userRole');
-  
-  if (!token) {
+  const savedUser = localStorage.getItem('userInfo');
+  if (!savedUser) {
     return null;
   }
-  
-  return { token, role };
+  try {
+    return JSON.parse(savedUser);
+  } catch (e) {
+    return null;
+  }
 };
 
+// Appelle le backend pour effacer le cookie httpOnly JWT
 export const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('userRole');
-  window.location.href = '/login';
+  return api.post('/auth/logout');
 };
