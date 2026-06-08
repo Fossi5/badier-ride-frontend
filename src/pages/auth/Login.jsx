@@ -63,6 +63,7 @@ const Login = () => {
             label="Nom d'utilisateur"
             name="username"
             autoComplete="username"
+            placeholder="ex : admin"
             autoFocus
             value={username}
             onChange={(e) => setUsername(e.target.value)}

@@ -52,7 +52,9 @@ const theme = createTheme({
 
 // Fonction pour vérifier le rôle et rediriger vers le tableau de bord approprié
 const RoleBasedRedirect = () => {
-  const userRole = localStorage.getItem('userRole');
+  // Lire les métadonnées user depuis 'userInfo' (stocké après migration httpOnly cookie)
+  const savedUser = localStorage.getItem('userInfo');
+  const userRole = savedUser ? JSON.parse(savedUser).role : null;
 
   if (userRole === 'ADMIN') {
     return <Navigate to="/admin/dashboard" />;

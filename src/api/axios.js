@@ -25,12 +25,16 @@ api.interceptors.response.use(
           error.response.data?.message || error.response.data?.error || "";
 
         // Vérifier si c'est un problème de token (token expiré ou invalide)
+        // Ne rediriger que si le token est expiré/invalide sur une route protégée.
+        // Les erreurs 401 sur /auth/ (ex: mauvais mot de passe) sont gérées par le composant Login.
+        const isAuthEndpoint = error.config.url.includes("/auth/");
         if (
-          errorMessage.toLowerCase().includes("token") ||
-          errorMessage.toLowerCase().includes("expired") ||
-          errorMessage.toLowerCase().includes("invalid") ||
-          errorMessage.toLowerCase().includes("unauthorized") ||
-          error.config.url.includes("/auth/")
+          !isAuthEndpoint && (
+            errorMessage.toLowerCase().includes("token") ||
+            errorMessage.toLowerCase().includes("expired") ||
+            errorMessage.toLowerCase().includes("invalid") ||
+            errorMessage.toLowerCase().includes("unauthorized")
+          )
         ) {
           // Session expirée : nettoyage des métadonnées et redirection vers login
           localStorage.removeItem("userInfo");
