@@ -12,8 +12,6 @@ import {
   Box,
   Typography,
   Divider,
-  Snackbar,
-  Alert,
   CircularProgress
 } from '@mui/material';
 import {
@@ -21,6 +19,7 @@ import {
   Add as AddIcon
 } from '@mui/icons-material';
 import AddressSelector from '../forms/AddressSelector';
+import { useAlert } from '../../context/AlertContext';
 
 const RouteAddressesDialog = ({
   open,
@@ -31,8 +30,7 @@ const RouteAddressesDialog = ({
 }) => {
   const [addressSelectorOpen, setAddressSelectorOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const { success, error: showError } = useAlert();
 
   if (!route) return null;
 
@@ -42,13 +40,12 @@ const RouteAddressesDialog = ({
   // Fonction pour gérer l'ajout d'adresse avec gestion d'erreur
   const handleAddAddress = async (address) => {
     setLoading(true);
-    setError(null);
     try {
       await onAddAddress(address);
-      setSuccess(`Adresse ajoutée avec succès à la tournée ${route.name}`);
+      success(`Adresse ajoutée avec succès à la tournée ${route.name}`);
       // Le sélecteur se ferme, mais le dialogue principal reste ouvert
     } catch (err) {
-      setError(`Erreur lors de l'ajout de l'adresse: ${err.message || 'Erreur inconnue'}`);
+      showError(`Erreur lors de l'ajout de l'adresse: ${err.message || 'Erreur inconnue'}`);
     } finally {
       setLoading(false);
       setAddressSelectorOpen(false);
@@ -58,21 +55,14 @@ const RouteAddressesDialog = ({
   // Fonction pour gérer la suppression d'adresse avec gestion d'erreur
   const handleRemoveAddress = async (point) => {
     setLoading(true);
-    setError(null);
     try {
       await onRemoveAddress(point);
-      setSuccess(`Adresse retirée avec succès de la tournée ${route.name}`);
+      success(`Adresse retirée avec succès de la tournée ${route.name}`);
     } catch (err) {
-      setError(`Erreur lors de la suppression de l'adresse: ${err.message || 'Erreur inconnue'}`);
+      showError(`Erreur lors de la suppression de l'adresse: ${err.message || 'Erreur inconnue'}`);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Fermer les alertes
-  const handleCloseAlert = () => {
-    setError(null);
-    setSuccess(null);
   };
 
   return (
@@ -138,30 +128,6 @@ const RouteAddressesDialog = ({
         onClose={() => setAddressSelectorOpen(false)}
         onSelectAddress={handleAddAddress}
       />
-
-      {/* Notification d'erreur */}
-      <Snackbar
-        open={!!error}
-        autoHideDuration={6000}
-        onClose={handleCloseAlert}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseAlert} severity="error" sx={{ width: '100%' }}>
-          {error}
-        </Alert>
-      </Snackbar>
-
-      {/* Notification de succès */}
-      <Snackbar
-        open={!!success}
-        autoHideDuration={3000}
-        onClose={handleCloseAlert}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseAlert} severity="success" sx={{ width: '100%' }}>
-          {success}
-        </Alert>
-      </Snackbar>
     </>
   );
 };

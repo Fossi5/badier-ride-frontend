@@ -14,22 +14,16 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   CircularProgress,
-  Divider,
   Tooltip
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Refresh as RefreshIcon,
-  Close as CloseIcon
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
+import DeleteDispatcherDialog from './components/DeleteDispatcherDialog';
 
 // Importation des services API
 import { 
@@ -43,6 +37,7 @@ import {
 // Importation des utilitaires
 import { useAlert } from '../../context/AlertContext';
 import { isValidEmail } from '../../utils/validators';
+import DispatcherFormDialog from './components/DispatcherFormDialog';
 
 const ManageDispatchers = () => {
   // État pour gérer les données des répartiteurs
@@ -341,131 +336,23 @@ const ManageDispatchers = () => {
       </Paper>
       
       {/* Dialogue de création/édition */}
-      <Dialog 
-        open={openDialog} 
+      <DispatcherFormDialog
+        open={openDialog}
         onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          {dialogMode === 'create' ? 'Ajouter un répartiteur' : 'Modifier le répartiteur'}
-        </DialogTitle>
-        
-        <Divider />
-        
-        <DialogContent>
-          <Box component="form" sx={{ mt: 1 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="username"
-              label="Nom d'utilisateur"
-              name="username"
-              autoComplete="username"
-              value={formData.username}
-              onChange={handleFormChange}
-              error={!!formErrors.username}
-              helperText={formErrors.username}
-              disabled={submitting}
-            />
-            
-            <TextField
-              margin="normal"
-              required={dialogMode === 'create'}
-              fullWidth
-              name="password"
-              label={dialogMode === 'create' ? 'Mot de passe' : 'Nouveau mot de passe (laisser vide pour ne pas changer)'}
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              value={formData.password}
-              onChange={handleFormChange}
-              error={!!formErrors.password}
-              helperText={formErrors.password}
-              disabled={submitting}
-            />
-            
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email"
-              name="email"
-              autoComplete="email"
-              value={formData.email}
-              onChange={handleFormChange}
-              error={!!formErrors.email}
-              helperText={formErrors.email}
-              disabled={submitting}
-            />
-            
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="department"
-              label="Département"
-              name="department"
-              value={formData.department}
-              onChange={handleFormChange}
-              error={!!formErrors.department}
-              helperText={formErrors.department}
-              disabled={submitting}
-            />
-          </Box>
-        </DialogContent>
-        
-        <DialogActions>
-          <Button onClick={handleCloseDialog} disabled={submitting}>
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            variant="contained"
-            startIcon={submitting ? <CircularProgress size={20} /> : null}
-            disabled={submitting}
-          >
-            {dialogMode === 'create' ? 'Créer' : 'Mettre à jour'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onSubmit={handleSubmit}
+        dialogMode={dialogMode}
+        formData={formData}
+        formErrors={formErrors}
+        onChange={handleFormChange}
+        loading={submitting}
+      />
       
-      {/* Dialogue de confirmation de suppression */}
-      <Dialog
+      <DeleteDispatcherDialog
         open={openDeleteDialog}
         onClose={handleCloseDeleteDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">
-          Confirmer la suppression
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
-            Êtes-vous sûr de vouloir supprimer le répartiteur <strong>{dispatcherToDelete?.username}</strong> ?
-            Cette action est irréversible.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={handleCloseDeleteDialog} 
-            startIcon={<CloseIcon />}
-          >
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleDeleteDispatcher} 
-            color="error"
-            variant="contained"
-            startIcon={<DeleteIcon />}
-            autoFocus
-          >
-            Supprimer
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleDeleteDispatcher}
+        dispatcherName={dispatcherToDelete?.username}
+      />
     </Container>
   );
 };
