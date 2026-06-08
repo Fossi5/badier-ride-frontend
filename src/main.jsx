@@ -28,19 +28,21 @@ root.render(
   </React.StrictMode>
 );
 
-// Fonction pour vérifier la connexion réseau
-const checkNetworkStatus = () => {
-  const isOnline = navigator.onLine;
-  
-  if (!isOnline) {
-    console.warn('Connexion internet perdue. Certaines fonctionnalités peuvent ne pas fonctionner correctement.');
-    // Vous pouvez également afficher une notification dans l'UI
-  }
-};
-
-// Écouteurs d'événements pour la connectivité réseau
-window.addEventListener('online', checkNetworkStatus);
-window.addEventListener('offline', checkNetworkStatus);
+// Gestion de la connectivité réseau : affichage d'un bandeau d'alerte visible dans le DOM
+window.addEventListener('offline', () => {
+  document.title = '(Hors ligne) Badier Ride';
+  const banner = document.getElementById('offline-banner');
+  if (banner) banner.style.display = 'block';
+});
+window.addEventListener('online', () => {
+  document.title = 'Badier Ride';
+  const banner = document.getElementById('offline-banner');
+  if (banner) banner.style.display = 'none';
+});
 
 // Vérifier l'état initial de la connexion
-checkNetworkStatus();
+if (!navigator.onLine) {
+  document.title = '(Hors ligne) Badier Ride';
+  const banner = document.getElementById('offline-banner');
+  if (banner) banner.style.display = 'block';
+}

@@ -79,7 +79,6 @@ const AdminDashboard = () => {
       setDeliveryPoints(deliveryPointsRes.data);
     } catch (err) {
       error('Erreur lors du chargement des données');
-      console.error('Erreur de chargement des données:', err);
     } finally {
       setLoading(false);
     }

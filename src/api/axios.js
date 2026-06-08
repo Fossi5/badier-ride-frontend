@@ -18,11 +18,9 @@ api.interceptors.request.use(
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
-    console.log("Requête envoyée:", config.method.toUpperCase(), config.url);
     return config;
   },
   (error) => {
-    console.error("Erreur lors de la préparation de la requête:", error);
     return Promise.reject(error);
   },
 );
@@ -58,20 +56,10 @@ api.interceptors.request.use(
 );*/
 api.interceptors.response.use(
   (response) => {
-    console.log("Réponse reçue:", response.status, response.config.url);
     return response;
   },
   (error) => {
     if (error.response) {
-      console.error("Erreur détaillée:", {
-        status: error.response.status,
-        url: error.config.url,
-        method: error.config.method,
-        headers: error.config.headers,
-        data: error.response.data,
-        timestamp: new Date().toISOString(),
-      });
-
       // Ne déconnecter que si c'est vraiment une erreur d'authentification
       if (error.response.status === 401) {
         const errorMessage =
@@ -85,26 +73,19 @@ api.interceptors.response.use(
           errorMessage.toLowerCase().includes("unauthorized") ||
           error.config.url.includes("/auth/")
         ) {
-          console.warn(
-            "⚠️ Détection token expiré ou invalide - Redirection vers login",
-          );
+          // Token expiré ou invalide : nettoyage du localStorage et redirection vers login
           localStorage.removeItem("token");
           localStorage.removeItem("userRole");
           window.location.href = "/login";
-        } else {
-          // Si c'est une autre erreur 401 (permissions, etc.), ne pas déconnecter
-          console.warn("⚠️ Erreur 401 mais pas liée au token:", errorMessage);
         }
+        // Sinon, erreur 401 liée aux permissions (pas au token) : on laisse le composant gérer l'erreur
       }
     } else if (error.request) {
-      // La requête a été faite mais aucune réponse n'a été reçue
-      console.error("Erreur réseau - Aucune réponse reçue:", error.request);
+      // La requête a été faite mais aucune réponse n'a été reçue (problème réseau ou serveur injoignable)
       error.customMessage =
         "Impossible de communiquer avec le serveur. Vérifiez votre connexion internet et que le serveur backend est bien démarré.";
-    } else {
-      // Une erreur s'est produite lors de la configuration de la requête
-      console.error("Erreur de configuration de la requête:", error.message);
     }
+    // Sinon, erreur lors de la configuration de la requête elle-même
 
     return Promise.reject(error);
   },

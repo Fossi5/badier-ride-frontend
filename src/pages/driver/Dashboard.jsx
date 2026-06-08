@@ -23,7 +23,6 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import StopIcon from '@mui/icons-material/Stop';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { format } from 'date-fns';
 
@@ -36,8 +35,6 @@ import DeliveryMap from '../../components/maps/DeliveryMap';
 const DriverDashboard = () => {
   const [routes, setRoutes] = useState([]);
   const [activeRoute, setActiveRoute] = useState(null);
-  // eslint-disable-next-line no-unused-vars
-  const [driverInfo, setDriverInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
@@ -56,7 +53,6 @@ const DriverDashboard = () => {
 
       // Récupérer profil chauffeur
       const profileResponse = await getDriverProfile();
-      setDriverInfo(profileResponse.data);
       setIsAvailable(profileResponse.data.isAvailable);
 
       // Récupérer ses tournées
@@ -74,7 +70,6 @@ const DriverDashboard = () => {
       }
 
       setLoading(false);
-      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors du chargement des données');
       setLoading(false);
@@ -97,7 +92,6 @@ const DriverDashboard = () => {
 
       // Recharger les données
       await fetchData();
-      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors de la mise à jour du statut');
     } finally {
@@ -116,7 +110,6 @@ const DriverDashboard = () => {
 
       // Recharger les données
       await fetchData();
-      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors du démarrage de la tournée');
     } finally {
@@ -135,7 +128,6 @@ const DriverDashboard = () => {
 
       // Recharger les données
       await fetchData();
-      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors de la clôture de la tournée');
     } finally {
@@ -148,7 +140,7 @@ const DriverDashboard = () => {
     try {
       await updateDriverLocation(position[0], position[1]);
     } catch (err) {
-      console.error('Erreur lors de la mise à jour de la position:', err);
+      // Échec silencieux de la mise à jour de position (non critique pour l'utilisateur)
     }
   };
 
@@ -161,7 +153,6 @@ const DriverDashboard = () => {
       await updateDriverAvailability(newAvailability);
       setIsAvailable(newAvailability);
       success(`Statut mis à jour: ${newAvailability ? 'Disponible' : 'Indisponible'}`);
-      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       error('Erreur lors de la mise à jour de la disponibilité');
       // Remettre l'ancien état en cas d'erreur

@@ -1,25 +1,8 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import { login as apiLogin } from '../api/auth';
-
-// Fonction utilitaire pour décoder un token JWT
-const parseJwt = (token) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      window.atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    console.error('Erreur lors du décodage du token JWT:', e);
-    return null;
-  }
-};
 
 // Création du contexte
 const AuthContext = createContext(null);
@@ -42,7 +25,12 @@ export const AuthProvider = ({ children }) => {
 
     if (token && role) {
       // Extraire le nom d'utilisateur du token
-      const decodedToken = parseJwt(token);
+      let decodedToken = null;
+      try {
+        decodedToken = jwtDecode(token);
+      } catch (e) {
+        // Token JWT malformé ou invalide
+      }
       const username = decodedToken ? decodedToken.sub : null;
       
       setCurrentUser({ token, role, username });
@@ -62,7 +50,12 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('userRole', role);
 
       // Extraire le nom d'utilisateur du token
-      const decodedToken = parseJwt(token);
+      let decodedToken = null;
+      try {
+        decodedToken = jwtDecode(token);
+      } catch (e) {
+        // Token JWT malformé ou invalide
+      }
       const extractedUsername = decodedToken ? decodedToken.sub : null;
 
       // Mettre à jour l'état avec le nom d'utilisateur
@@ -79,7 +72,6 @@ export const AuthProvider = ({ children }) => {
 
       return response;
     } catch (error) {
-      console.error('Erreur de connexion:', error);
       throw error;
     }
   };

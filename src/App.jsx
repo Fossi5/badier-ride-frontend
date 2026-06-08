@@ -11,6 +11,7 @@ import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import AlertDisplay from './components/common/AlertDisplay';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Pages d'authentification
 import Login from './pages/auth/Login';
@@ -19,7 +20,6 @@ import Login from './pages/auth/Login';
 import AdminDashboard from './pages/admin/Dashboard';
 import ManageDrivers from './pages/admin/ManageDrivers';
 import ManageDispatchers from './pages/admin/ManageDispatchers';
-//import ManageAddresses from './pages/admin/ManageAddresses';
 
 // Pages répartiteur
 import DispatcherDashboard from './pages/dispatcher/Dashboard';
@@ -74,6 +74,7 @@ function App() {
           <AuthProvider>
             <Header />
             <AlertDisplay />
+            <ErrorBoundary>
             <Routes>
               {/* Route publique */}
               <Route path="/login" element={<Login />} />
@@ -109,6 +110,7 @@ function App() {
               {/* Route par défaut - redirection vers la page de connexion */}
               <Route path="*" element={<Navigate to="/login" />} />
             </Routes>
+            </ErrorBoundary>
             <Footer />
           </AuthProvider>
         </AlertProvider>

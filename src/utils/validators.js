@@ -14,11 +14,11 @@ export const isValidEmail = (email) => {
   };
   
   /**
-   * Validateur de numéro de téléphone français
-  /**
- * @param {string} phone - Numéro à valider
- * @returns {boolean} Indique si le numéro est valide
- */
+   * Validateur de numéro de téléphone belge
+   * Accepte les formats : 0XXXXXXXXX (national) ou +32XXXXXXXXX / 32XXXXXXXXX (international)
+   * @param {string} phone - Numéro à valider
+   * @returns {boolean} Indique si le numéro est valide
+   */
 export const isValidPhone = (phone) => {
   if (!phone) return false;
 
@@ -35,14 +35,14 @@ export const isValidPhone = (phone) => {
 };
   
   /**
-   * Validateur de code postal français
+   * Validateur de code postal belge (4 chiffres)
    * @param {string} postalCode - Code postal à valider
    * @returns {boolean} Indique si le code postal est valide
    */
   export const isValidPostalCode = (postalCode) => {
     if (!postalCode) return false;
-    
-    // Regex pour un code postal français (4 chiffres)
+
+    // Regex pour un code postal belge (4 chiffres)
     const postalCodeRegex = /^[0-9]{4}$/;
     return postalCodeRegex.test(postalCode);
   };

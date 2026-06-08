@@ -1,4 +1,4 @@
-// src/pages/dispatcher/ManageRoutes.jsx
+﻿// src/pages/dispatcher/ManageRoutes.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -76,14 +76,14 @@ const ManageRoutes = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // États pour les erreurs d'autorisations
+  // Ã‰tats pour les erreurs d'autorisations
   const [authErrors, setAuthErrors] = useState({
     driversError: false,
     dispatchersError: false,
     routesError: false
   });
 
-  // États pour le dialogue de création/édition
+  // Ã‰tats pour le dialogue de crÃ©ation/Ã©dition
   const [openRouteDialog, setOpenRouteDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('create');
   const [selectedRoute, setSelectedRoute] = useState(null);
@@ -100,7 +100,7 @@ const ManageRoutes = () => {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  // État pour le dialogue de confirmation de suppression
+  // Ã‰tat pour le dialogue de confirmation de suppression
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState(null);
 
@@ -111,7 +111,7 @@ const ManageRoutes = () => {
   const { success, error, } = useAlert();
   const { currentUser } = useAuth();
 
-  // Charger les données au montage du composant
+  // Charger les donnÃ©es au montage du composant
   useEffect(() => {
     fetchData();
   }, []);
@@ -123,29 +123,28 @@ const ManageRoutes = () => {
     }
   }, [loading, shouldAutoOpenCreateDialog, location.pathname, navigate]);
 
-  // Fonction pour charger toutes les données nécessaires
+  // Fonction pour charger toutes les donnÃ©es nÃ©cessaires
   const fetchData = async () => {
     setLoading(true);
 
-    // Réinitialiser les erreurs d'autorisation
+    // RÃ©initialiser les erreurs d'autorisation
     setAuthErrors({
       driversError: false,
       dispatchersError: false,
       routesError: false
     });
 
-    // Charger les tournées
+    // Charger les tournÃ©es
     try {
       const routesRes = await getAllRoutes();
       setRoutes(routesRes.data);
     } catch (err) {
       if (err.response?.status === 403) {
         setAuthErrors(prev => ({ ...prev, routesError: true }));
-        error("Vous n'avez pas l'autorisation d'accéder aux tournées");
+        error("Vous n'avez pas l'autorisation d'accÃ©der aux tournÃ©es");
       } else {
-        error('Erreur lors du chargement des tournées: ' + (err.response?.data?.error || err.message));
+        error('Erreur lors du chargement des tournÃ©es: ' + (err.response?.data?.error || err.message));
       }
-      console.error('Erreur routes:', err);
     }
 
     // Charger les points de livraison
@@ -154,7 +153,6 @@ const ManageRoutes = () => {
       setDeliveryPoints(deliveryPointsRes.data);
     } catch (err) {
       error('Erreur lors du chargement des points de livraison: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur points de livraison:', err);
     }
 
     // Charger les chauffeurs disponibles
@@ -164,32 +162,27 @@ const ManageRoutes = () => {
     } catch (err) {
       if (err.response?.status === 403) {
         setAuthErrors(prev => ({ ...prev, driversError: true }));
-        console.warn("Pas d'accès aux chauffeurs disponibles, utilisation des chauffeurs standards");
-
-        // Tenter de charger les chauffeurs standards comme fallback
+        // Pas d'accÃ¨s aux chauffeurs disponibles : fallback sur la liste complÃ¨te des chauffeurs
         try {
           const driversRes = await getAllDrivers();
           setDrivers(driversRes.data);
         } catch (driverErr) {
-          console.error('Erreur fallback chauffeurs:', driverErr);
+          // Ã‰chec du fallback chauffeurs : aucune liste disponible
         }
       } else {
         error('Erreur lors du chargement des chauffeurs disponibles: ' + (err.response?.data?.error || err.message));
-        console.error('Erreur chauffeurs disponibles:', err);
       }
     }
 
-    // Charger les répartiteurs
+    // Charger les rÃ©partiteurs
     try {
       const dispatchersRes = await getAllDispatchers();
       setDispatchers(dispatchersRes.data);
     } catch (err) {
       if (err.response?.status === 403) {
         setAuthErrors(prev => ({ ...prev, dispatchersError: true }));
-        console.warn("Pas d'accès aux répartiteurs");
       } else {
-        error('Erreur lors du chargement des répartiteurs: ' + (err.response?.data?.error || err.message));
-        console.error('Erreur répartiteurs:', err);
+        error('Erreur lors du chargement des rÃ©partiteurs: ' + (err.response?.data?.error || err.message));
       }
     }
 
@@ -207,22 +200,22 @@ const ManageRoutes = () => {
     setPage(0);
   };
 
-  // Ouverture du dialogue pour créer une nouvelle tournée
+  // Ouverture du dialogue pour crÃ©er une nouvelle tournÃ©e
   const handleOpenCreateDialog = () => {
-    // Vérifier si toutes les données nécessaires sont disponibles
+    // VÃ©rifier si toutes les donnÃ©es nÃ©cessaires sont disponibles
     if (authErrors.driversError && authErrors.dispatchersError) {
-      error("Vous n'avez pas les autorisations nécessaires pour créer une tournée");
+      error("Vous n'avez pas les autorisations nÃ©cessaires pour crÃ©er une tournÃ©e");
       return;
     }
 
-    // Préremplir avec le dispatcher actuel si l'utilisateur est un dispatcher
+    // PrÃ©remplir avec le dispatcher actuel si l'utilisateur est un dispatcher
     let initialData = {
       name: '',
       driverId: '',
       dispatcherId: '',
       deliveryPointIds: [],
       startTime: new Date(),
-      endTime: new Date(new Date().setHours(new Date().getHours() + 8)), // Par défaut 8h plus tard
+      endTime: new Date(new Date().setHours(new Date().getHours() + 8)), // Par dÃ©faut 8h plus tard
       notes: '',
       status: 'PLANNED'
     };
@@ -240,11 +233,11 @@ const ManageRoutes = () => {
     setOpenRouteDialog(true);
   };
 
-  // Ouverture du dialogue pour éditer une tournée existante
+  // Ouverture du dialogue pour Ã©diter une tournÃ©e existante
   const handleOpenEditDialog = (route) => {
-    // Vérifier si toutes les données nécessaires sont disponibles
+    // VÃ©rifier si toutes les donnÃ©es nÃ©cessaires sont disponibles
     if (authErrors.driversError && authErrors.dispatchersError) {
-      error("Vous n'avez pas les autorisations nécessaires pour modifier une tournée");
+      error("Vous n'avez pas les autorisations nÃ©cessaires pour modifier une tournÃ©e");
       return;
     }
 
@@ -303,94 +296,28 @@ const ManageRoutes = () => {
     }
   };
 
-  // Validation du formulaire
-  /*const validateForm = () => {
-    const errors = {};
-    
-    if (!formData.name) {
-      errors.name = 'Le nom de la tournée est obligatoire';
-    }
-    
-    if (!formData.driverId) {
-      errors.driverId = 'Veuillez sélectionner un chauffeur';
-    }
-    
-    if (!formData.dispatcherId) {
-      errors.dispatcherId = 'Veuillez sélectionner un répartiteur';
-    }
-    
-    if (formData.deliveryPointIds.length === 0) {
-      errors.deliveryPointIds = 'Veuillez sélectionner au moins un point de livraison';
-    }
-    
-    if (!formData.startTime) {
-      errors.startTime = 'La date et heure de début sont obligatoires';
-    }
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };*/
-
-  // Soumission du formulaire
-  /*const handleSubmit = async () => {
-    if (!validateForm()) return;
-    
-    setSubmitting(true);
-    
-    try {
-      const routeData = {
-        ...formData,
-        startTime: formData.startTime,
-        endTime: formData.endTime
-      };
-      
-      if (dialogMode === 'create') {
-        // Création d'une nouvelle tournée
-        await createRoute(routeData);
-        success('Tournée créée avec succès');
-      } else {
-        // Mise à jour d'une tournée existante
-        await updateRoute(selectedRoute.id, routeData);
-        success('Tournée mise à jour avec succès');
-      }
-      
-      // Fermer le dialogue et rafraîchir la liste
-      handleCloseRouteDialog();
-      fetchData();
-    } catch (err) {
-      if (err.response?.status === 403) {
-        error(`Vous n'avez pas l'autorisation de ${dialogMode === 'create' ? 'créer' : 'modifier'} une tournée`);
-      } else {
-        error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée: ` + (err.response?.data?.error || err.message));
-      }
-      console.error('Erreur:', err);
-    } finally {
-      setSubmitting(false);
-    }
-  };*/
-
   const validateForm = () => {
     const errors = {};
 
     if (!formData.name) {
-      errors.name = 'Le nom de la tournée est obligatoire';
+      errors.name = 'Le nom de la tournÃ©e est obligatoire';
     }
 
     if (!formData.driverId) {
-      errors.driverId = 'Veuillez sélectionner un chauffeur';
+      errors.driverId = 'Veuillez sÃ©lectionner un chauffeur';
     }
 
     // Ne validez le champ dispatcherId que si l'utilisateur n'est pas un dispatcher
     if (!formData.dispatcherId && currentUser?.role !== 'DISPATCHER') {
-      errors.dispatcherId = 'Veuillez sélectionner un répartiteur';
+      errors.dispatcherId = 'Veuillez sÃ©lectionner un rÃ©partiteur';
     }
 
     if (formData.deliveryPointIds.length === 0) {
-      errors.deliveryPointIds = 'Veuillez sélectionner au moins un point de livraison';
+      errors.deliveryPointIds = 'Veuillez sÃ©lectionner au moins un point de livraison';
     }
 
     if (!formData.startTime) {
-      errors.startTime = 'La date et heure de début sont obligatoires';
+      errors.startTime = 'La date et heure de dÃ©but sont obligatoires';
     }
 
     setFormErrors(errors);
@@ -400,28 +327,23 @@ const ManageRoutes = () => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    // S'assurer que le dispatcherId est défini pour un dispatcher
+    // S'assurer que le dispatcherId est dÃ©fini pour un dispatcher
     let submissionData = { ...formData };
 
     if (currentUser?.role === 'DISPATCHER') {
       if (submissionData.dispatcherId) {
-        console.log('Dispatcher ID déjà défini dans le formulaire:', submissionData.dispatcherId);
+        // Dispatcher ID dÃ©jÃ  dÃ©fini dans le formulaire, on le conserve
       }
       else if (currentUser.username) {
-        console.log('Recherche dispatcher pour username:', currentUser.username);
         const currentDispatcher = dispatchers.find(d => d.username === currentUser.username);
 
         if (currentDispatcher) {
           submissionData.dispatcherId = currentDispatcher.id;
-          console.log('Dispatcher ID défini automatiquement:', currentDispatcher.id);
         }
         else {
-          console.warn("Dispatcher non trouvé dans la liste avec username:", currentUser.username);
-
-          // Fallback au premier dispatcher si aucun correspondant n'est trouvé
+          // Dispatcher non trouvÃ© par username : fallback au premier dispatcher de la liste
           if (dispatchers.length > 0) {
             submissionData.dispatcherId = dispatchers[0].id;
-            console.log('Dispatcher ID forcé au premier de la liste:', dispatchers[0].id);
           } else {
             error("Aucun dispatcher disponible. Veuillez contacter l'administrateur.");
             setSubmitting(false);
@@ -432,7 +354,6 @@ const ManageRoutes = () => {
       // Si aucun username n'est disponible, utiliser le premier dispatcher
       else if (dispatchers.length > 0) {
         submissionData.dispatcherId = dispatchers[0].id;
-        console.log('Dispatcher ID forcé au premier de la liste (aucun username):', dispatchers[0].id);
       } else {
         error("Aucun dispatcher disponible. Veuillez contacter l'administrateur.");
         setSubmitting(false);
@@ -443,23 +364,18 @@ const ManageRoutes = () => {
     setSubmitting(true);
 
     try {
-      console.log('Envoi de la requête avec données:', submissionData);
-
       if (dialogMode === 'create') {
-        const result = await createRoute(submissionData);
-        console.log('Création réussie, résultat:', result);
-        success('Tournée créée avec succès');
+        await createRoute(submissionData);
+        success('TournÃ©e crÃ©Ã©e avec succÃ¨s');
       } else {
-        const result = await updateRoute(selectedRoute.id, submissionData);
-        console.log('Mise à jour réussie, résultat:', result);
-        success('Tournée mise à jour avec succès');
+        await updateRoute(selectedRoute.id, submissionData);
+        success('TournÃ©e mise Ã  jour avec succÃ¨s');
       }
 
       handleCloseRouteDialog();
       fetchData();
     } catch (err) {
-      console.error('Erreur lors de la soumission:', err);
-      error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée: ` + (err.response?.data?.error || err.message));
+      error(`Erreur lors de la ${dialogMode === 'create' ? 'crÃ©ation' : 'mise Ã  jour'} de la tournÃ©e: ` + (err.response?.data?.error || err.message));
     } finally {
       setSubmitting(false);
     }
@@ -477,40 +393,38 @@ const ManageRoutes = () => {
     setRouteToDelete(null);
   };
 
-  // Suppression d'une tournée
+  // Suppression d'une tournÃ©e
   const handleDeleteRoute = async () => {
     if (!routeToDelete) return;
 
     try {
       await deleteRoute(routeToDelete.id);
-      success('Tournée supprimée avec succès');
+      success('TournÃ©e supprimÃ©e avec succÃ¨s');
 
-      // Fermer le dialogue et rafraîchir la liste
+      // Fermer le dialogue et rafraÃ®chir la liste
       handleCloseDeleteDialog();
       fetchData();
     } catch (err) {
       if (err.response?.status === 403) {
-        error("Vous n'avez pas l'autorisation de supprimer une tournée");
+        error("Vous n'avez pas l'autorisation de supprimer une tournÃ©e");
       } else {
-        error('Erreur lors de la suppression de la tournée: ' + (err.response?.data?.error || err.message));
+        error('Erreur lors de la suppression de la tournÃ©e: ' + (err.response?.data?.error || err.message));
       }
-      console.error('Erreur:', err);
     }
   };
 
-  // Mise à jour du statut d'une tournée
+  // Mise Ã  jour du statut d'une tournÃ©e
   const handleUpdateStatus = async (routeId, newStatus) => {
     try {
       await updateRouteStatus(routeId, newStatus);
-      success(`Statut de la tournée mis à jour: ${newStatus}`);
+      success(`Statut de la tournÃ©e mis Ã  jour: ${newStatus}`);
       fetchData();
     } catch (err) {
       if (err.response?.status === 403) {
-        error("Vous n'avez pas l'autorisation de modifier le statut d'une tournée");
+        error("Vous n'avez pas l'autorisation de modifier le statut d'une tournÃ©e");
       } else {
-        error('Erreur lors de la mise à jour du statut: ' + (err.response?.data?.error || err.message));
+        error('Erreur lors de la mise Ã  jour du statut: ' + (err.response?.data?.error || err.message));
       }
-      console.error('Erreur:', err);
     }
   };
 
@@ -519,19 +433,19 @@ const ManageRoutes = () => {
     navigate(`/dispatcher/optimize?routeId=${routeId}`);
   };
 
-  // Détermine si l'utilisateur courant est le dispatcher assigné à la tournée
+  // DÃ©termine si l'utilisateur courant est le dispatcher assignÃ© Ã  la tournÃ©e
   const isAssignedDispatcher = (route) => {
     return currentUser?.role === 'DISPATCHER' &&
       route.dispatcher &&
       route.dispatcher.username === currentUser.username;
   };
 
-  // Détermine si l'utilisateur a le droit de modifier une tournée spécifique
+  // DÃ©termine si l'utilisateur a le droit de modifier une tournÃ©e spÃ©cifique
   const canEditRoute = (route) => {
     return currentUser?.role === 'ADMIN' || isAssignedDispatcher(route);
   };
 
-  // Déterminer les drivers à afficher dans la liste
+  // DÃ©terminer les drivers Ã  afficher dans la liste
   const getDriversForList = () => {
     return authErrors.driversError ? drivers : availableDrivers.length > 0 ? availableDrivers : drivers;
   };
@@ -542,19 +456,19 @@ const ManageRoutes = () => {
       {(authErrors.driversError || authErrors.dispatchersError) && (
         <Alert severity="warning" sx={{ mb: 3 }}>
           <AlertTitle>Attention</AlertTitle>
-          {authErrors.driversError && "Vous n'avez pas accès à certaines fonctionnalités liées aux chauffeurs. "}
-          {authErrors.dispatchersError && "Vous n'avez pas accès à certaines fonctionnalités liées aux répartiteurs. "}
-          Certaines fonctionnalités peuvent être limitées.
+          {authErrors.driversError && "Vous n'avez pas accÃ¨s Ã  certaines fonctionnalitÃ©s liÃ©es aux chauffeurs. "}
+          {authErrors.dispatchersError && "Vous n'avez pas accÃ¨s Ã  certaines fonctionnalitÃ©s liÃ©es aux rÃ©partiteurs. "}
+          Certaines fonctionnalitÃ©s peuvent Ãªtre limitÃ©es.
         </Alert>
       )}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
-          Gestion des tournées
+          Gestion des tournÃ©es
         </Typography>
 
         <Box>
-          <Tooltip title="Rafraîchir">
+          <Tooltip title="RafraÃ®chir">
             <IconButton onClick={fetchData} disabled={loading} sx={{ mr: 1 }}>
               <RefreshIcon />
             </IconButton>
@@ -566,7 +480,7 @@ const ManageRoutes = () => {
             onClick={handleOpenCreateDialog}
             disabled={loading || (authErrors.driversError && authErrors.dispatchersError)}
           >
-            Nouvelle tournée
+            Nouvelle tournÃ©e
           </Button>
         </Box>
       </Box>
@@ -579,16 +493,16 @@ const ManageRoutes = () => {
             </Box>
           ) : routes.length === 0 ? (
             <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Typography>Aucune tournée disponible</Typography>
+              <Typography>Aucune tournÃ©e disponible</Typography>
             </Box>
           ) : (
-            <Table stickyHeader aria-label="table des tournées">
+            <Table stickyHeader aria-label="table des tournÃ©es">
               <TableHead>
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Nom</TableCell>
                   <TableCell>Chauffeur</TableCell>
-                  <TableCell>Répartiteur</TableCell>
+                  <TableCell>RÃ©partiteur</TableCell>
                   <TableCell>Statut</TableCell>
                   <TableCell>Points</TableCell>
                   <TableCell>Date</TableCell>
@@ -602,8 +516,8 @@ const ManageRoutes = () => {
                     <TableRow key={route.id} hover>
                       <TableCell>{route.id}</TableCell>
                       <TableCell>{route.name}</TableCell>
-                      <TableCell>{route.driver?.username || 'Non assigné'}</TableCell>
-                      <TableCell>{route.dispatcher?.username || 'Non assigné'}</TableCell>
+                      <TableCell>{route.driver?.username || 'Non assignÃ©'}</TableCell>
+                      <TableCell>{route.dispatcher?.username || 'Non assignÃ©'}</TableCell>
                       <TableCell>
                         <Chip
                           size="small"
@@ -658,7 +572,7 @@ const ManageRoutes = () => {
                           </Tooltip>
 
                           {canEditRoute(route) && route.status === 'PLANNED' && (
-                            <Tooltip title="Démarrer">
+                            <Tooltip title="DÃ©marrer">
                               <IconButton
                                 size="small"
                                 onClick={() => handleUpdateStatus(route.id, 'IN_PROGRESS')}
@@ -702,7 +616,7 @@ const ManageRoutes = () => {
         />
       </Paper>
 
-      {/* Dialogue de création/édition de tournée */}
+      {/* Dialogue de crÃ©ation/Ã©dition de tournÃ©e */}
       <Dialog
         open={openRouteDialog}
         onClose={handleCloseRouteDialog}
@@ -710,7 +624,7 @@ const ManageRoutes = () => {
         fullWidth
       >
         <DialogTitle>
-          {dialogMode === 'create' ? 'Nouvelle tournée' : 'Modifier la tournée'}
+          {dialogMode === 'create' ? 'Nouvelle tournÃ©e' : 'Modifier la tournÃ©e'}
         </DialogTitle>
 
         <Divider />
@@ -723,7 +637,7 @@ const ManageRoutes = () => {
                   required
                   fullWidth
                   id="name"
-                  label="Nom de la tournée"
+                  label="Nom de la tournÃ©e"
                   name="name"
                   value={formData.name}
                   onChange={handleFormChange}
@@ -762,14 +676,14 @@ const ManageRoutes = () => {
 
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth required error={!!formErrors.dispatcherId}>
-                  <InputLabel id="dispatcher-label">Répartiteur</InputLabel>
+                  <InputLabel id="dispatcher-label">RÃ©partiteur</InputLabel>
                   <Select
                     labelId="dispatcher-label"
                     id="dispatcherId"
                     name="dispatcherId"
                     value={formData.dispatcherId}
                     onChange={handleFormChange}
-                    label="Répartiteur"
+                    label="RÃ©partiteur"
                     disabled={submitting || (currentUser?.role === 'DISPATCHER') || authErrors.dispatchersError}
                   >
                     {dispatchers.map((dispatcher) => (
@@ -833,7 +747,7 @@ const ManageRoutes = () => {
               <Grid item xs={12} sm={6}>
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                   <DateTimePicker
-                    label="Date et heure de début"
+                    label="Date et heure de dÃ©but"
                     value={formData.startTime}
                     onChange={(date) => handleDateChange('startTime', date)}
                     slotProps={{
@@ -879,10 +793,10 @@ const ManageRoutes = () => {
                     label="Statut"
                     disabled={submitting}
                   >
-                    <MenuItem value="PLANNED">Planifiée</MenuItem>
+                    <MenuItem value="PLANNED">PlanifiÃ©e</MenuItem>
                     <MenuItem value="IN_PROGRESS">En cours</MenuItem>
-                    <MenuItem value="COMPLETED">Terminée</MenuItem>
-                    <MenuItem value="CANCELLED">Annulée</MenuItem>
+                    <MenuItem value="COMPLETED">TerminÃ©e</MenuItem>
+                    <MenuItem value="CANCELLED">AnnulÃ©e</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -914,7 +828,7 @@ const ManageRoutes = () => {
             startIcon={submitting ? <CircularProgress size={20} /> : null}
             disabled={submitting}
           >
-            {dialogMode === 'create' ? 'Créer' : 'Mettre à jour'}
+            {dialogMode === 'create' ? 'CrÃ©er' : 'Mettre Ã  jour'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -931,8 +845,8 @@ const ManageRoutes = () => {
         </DialogTitle>
         <DialogContent>
           <Typography>
-            Êtes-vous sûr de vouloir supprimer la tournée <strong>{routeToDelete?.name}</strong> ?
-            Cette action est irréversible.
+            ÃŠtes-vous sÃ»r de vouloir supprimer la tournÃ©e <strong>{routeToDelete?.name}</strong> ?
+            Cette action est irrÃ©versible.
           </Typography>
         </DialogContent>
         <DialogActions>

@@ -80,7 +80,6 @@ const DispatcherDashboard = () => {
       setProfile(profileRes.data);
     } catch (err) {
       error('Erreur lors du chargement des données');
-      console.error('Erreur:', err);
     } finally {
       setLoading(false);
     }

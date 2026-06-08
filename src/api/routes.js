@@ -11,20 +11,20 @@ export const getRouteById = (id) => {
   return api.get(`/routes/${id}`);
 };
 
-// Récupérer les routes par statut
-export const getRoutesByStatus = (status) => {
-  return api.get(`/routes/status/${status}`);
-};
+// TODO: getRoutesByStatus n'est pas utilisé actuellement — à supprimer si inutile
+// export const getRoutesByStatus = (status) => {
+//   return api.get(`/routes/status/${status}`);
+// };
 
 // Récupérer les routes pour un chauffeur connecté
 export const getDriverRoutes = () => {
   return api.get("/routes/driver");
 };
 
-// Récupérer les routes pour un dispatcher
-export const getRoutesByDispatcher = (dispatcherId) => {
-  return api.get(`/routes/dispatcher/${dispatcherId}`);
-};
+// TODO: getRoutesByDispatcher n'est pas utilisé actuellement — à supprimer si inutile
+// export const getRoutesByDispatcher = (dispatcherId) => {
+//   return api.get(`/routes/dispatcher/${dispatcherId}`);
+// };
 
 // Créer une nouvelle route
 export const createRoute = (routeData) => {

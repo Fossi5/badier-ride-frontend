@@ -92,7 +92,6 @@ const ManageDrivers = () => {
       setDrivers(response.data);
     } catch (err) {
       error('Erreur lors du chargement des chauffeurs');
-      console.error('Erreur:', err);
     } finally {
       setLoading(false);
     }
@@ -150,7 +149,6 @@ const ManageDrivers = () => {
       setOpenDialog(true);
     } catch (err) {
       error('Erreur lors de la récupération des détails du chauffeur');
-      console.error('Erreur:', err);
     }
   };
   
@@ -239,7 +237,6 @@ const ManageDrivers = () => {
       fetchDrivers();
     } catch (err) {
       error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} du chauffeur`);
-      console.error('Erreur:', err);
     } finally {
       setSubmitting(false);
     }
@@ -270,7 +267,6 @@ const ManageDrivers = () => {
       fetchDrivers();
     } catch (err) {
       error('Erreur lors de la suppression du chauffeur');
-      console.error('Erreur:', err);
     }
   };
   
