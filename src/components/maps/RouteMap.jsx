@@ -1,68 +1,12 @@
-// src/components/maps/RouteMap.jsx
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Box, Typography, Chip, Fab, CircularProgress } from '@mui/material';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { createColoredRouteSegments } from '../../utils/mapUtils';
 import { calculateRoute } from '../../utils/geocoding';
+import { DRIVER_ICON, getStatusIcon } from '../../utils/mapIcons';
 
-// Correction des icônes Leaflet pour React
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
-
-// Icône personnalisée pour le chauffeur
-const driverIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-});
-
-// Icônes personnalisées pour les points de livraison selon leur statut
-const deliveryIcons = {
-  PENDING: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  }),
-  IN_PROGRESS: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  }),
-  COMPLETED: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  }),
-  FAILED: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  }),
-};
-
-// Composant pour recentrer la carte sur la position du chauffeur
 const RecenterControl = ({ driverPosition }) => {
   const map = useMap();
 
@@ -82,7 +26,7 @@ const RecenterControl = ({ driverPosition }) => {
 const RouteMap = ({ route }) => {
   const [driverPosition, setDriverPosition] = useState(null);
   const [routePoints, setRoutePoints] = useState([]);
-  const [center, setCenter] = useState([48.8566, 2.3522]); // Paris par défaut
+  const [center, setCenter] = useState([48.8566, 2.3522]);
   const [zoom, setZoom] = useState(13);
   const [routeSegments, setRouteSegments] = useState([]);
   const [fallbackSegments, setFallbackSegments] = useState([]);
@@ -95,12 +39,10 @@ const RouteMap = ({ route }) => {
     if (!route) return;
 
     const initializeRoute = async () => {
-      // Récupérer la position du chauffeur si disponible
       if (route.driver && route.driver.latitude && route.driver.longitude) {
         setDriverPosition([route.driver.latitude, route.driver.longitude]);
       }
 
-      // Préparer les points de livraison pour la carte
       if (route.deliveryPoints && route.deliveryPoints.length > 0) {
         const points = route.deliveryPoints
           .filter(point => point.address && point.address.latitude && point.address.longitude)
@@ -116,7 +58,6 @@ const RouteMap = ({ route }) => {
             notes: point.clientNote
           }));
         
-        // Calculer l'itinéraire routier entre tous les points
         if (points.length > 1) {
           setCalculatingRoute(true);
           const allCoordinates = points.map(p => p.position);
@@ -129,27 +70,22 @@ const RouteMap = ({ route }) => {
               duration: routeResult.duration
             });
 
-            // Créer les segments colorés pour l'itinéraire calculé
             const segments = createColoredRouteSegments(routeResult.coordinates);
             setRouteSegments(segments);
           }
           setCalculatingRoute(false);
         }
 
-        // Créer les segments colorés pour la ligne de secours (directe)
         const fallbackPositions = points.map(p => p.position);
         const fallbackSegs = createColoredRouteSegments(fallbackPositions);
         setFallbackSegments(fallbackSegs);
 
         setRoutePoints(points);
 
-        // Calculer le centre et le zoom de la carte
         if (points.length > 0) {
-          // Calculer les limites des points
           const latitudes = points.map(p => p.position[0]);
           const longitudes = points.map(p => p.position[1]);
 
-          // Ajouter la position du chauffeur si disponible
           if (driverPosition) {
             latitudes.push(driverPosition[0]);
             longitudes.push(driverPosition[1]);
@@ -163,12 +99,11 @@ const RouteMap = ({ route }) => {
           const centerLng = (minLng + maxLng) / 2;
           setCenter([centerLat, centerLng]);
 
-          // Calculer le zoom (basé sur l'étendue)
           const latRange = maxLat - minLat;
           const lngRange = maxLng - minLng;
           const range = Math.max(latRange, lngRange);
 
-          let newZoom = 13; // zoom par défaut
+          let newZoom = 13;
           if (range > 0.2) newZoom = 10;
           if (range > 0.5) newZoom = 9;
           if (range > 1) newZoom = 8;
@@ -177,10 +112,9 @@ const RouteMap = ({ route }) => {
 
           setZoom(newZoom);
 
-          // Créer les segments colorés pour visualiser l'ordre
           const polylinePositions = points.map(point => point.position);
           if (driverPosition) {
-            polylinePositions.unshift(driverPosition); // Ajouter le chauffeur au début
+            polylinePositions.unshift(driverPosition);
           }
 
           const segments = createColoredRouteSegments(polylinePositions);
@@ -192,7 +126,6 @@ const RouteMap = ({ route }) => {
     initializeRoute();
   }, [route]);
 
-  // Fonction pour recentrer sur la position du chauffeur
   const handleRecenterOnDriver = () => {
     if (driverPosition && mapInstance) {
       mapInstance.flyTo(driverPosition, 15, {
@@ -216,10 +149,8 @@ const RouteMap = ({ route }) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Contrôle pour recentrer sur le chauffeur */}
         <RecenterControl driverPosition={driverPosition} />
 
-        {/* Tracer l'itinéraire routier calculé avec segments colorés */}
         {routeGeometry && routeGeometry.length > 1 && routeSegments.length > 0 && (
           <>
             {routeSegments.map((segment, index) => (
@@ -235,7 +166,6 @@ const RouteMap = ({ route }) => {
           </>
         )}
 
-        {/* Si pas d'itinéraire calculé, afficher ligne droite de secours avec segments colorés */}
         {!routeGeometry && routePoints.length > 1 && fallbackSegments.length > 0 && (
           <>
             {fallbackSegments.map((segment, index) => (
@@ -251,9 +181,8 @@ const RouteMap = ({ route }) => {
           </>
         )}
 
-        {/* Position du chauffeur */}
         {driverPosition && (
-          <Marker position={driverPosition} icon={driverIcon}>
+          <Marker position={driverPosition} icon={DRIVER_ICON}>
             <Popup>
               <Typography variant="subtitle2">Chauffeur: {route.driver.username}</Typography>
               <Typography variant="body2">Position actuelle</Typography>
@@ -261,12 +190,11 @@ const RouteMap = ({ route }) => {
           </Marker>
         )}
 
-        {/* Points de livraison */}
         {routePoints.map((point, index) => (
           <Marker
             key={point.id}
             position={point.position}
-            icon={deliveryIcons[point.status] || DefaultIcon}
+            icon={getStatusIcon(point.status)}
           >
             <Popup>
               <Box sx={{ minWidth: 200 }}>
@@ -314,7 +242,6 @@ const RouteMap = ({ route }) => {
         ))}
       </MapContainer>
 
-      {/* Indicateur de chargement lors du calcul de l'itinéraire */}
       {calculatingRoute && (
         <Box
           sx={{
@@ -338,7 +265,6 @@ const RouteMap = ({ route }) => {
         </Box>
       )}
 
-      {/* Affichage des infos de l'itinéraire */}
       {routeInfo && (
         <Box
           sx={{
@@ -362,7 +288,6 @@ const RouteMap = ({ route }) => {
         </Box>
       )}
 
-      {/* Bouton pour recentrer sur la position du chauffeur */}
       {driverPosition && (
         <Fab
           color="secondary"

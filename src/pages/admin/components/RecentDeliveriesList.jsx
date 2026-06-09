@@ -20,40 +20,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/formatters';
-
-/**
- * Retourne la couleur MUI selon le statut de livraison.
- */
-const getDeliveryStatusColor = (status) => {
-  switch (status) {
-    case 'COMPLETED':
-      return 'success';
-    case 'IN_PROGRESS':
-      return 'warning';
-    case 'FAILED':
-      return 'error';
-    default:
-      return 'default';
-  }
-};
-
-/**
- * Retourne le libellé français du statut de livraison.
- */
-const getDeliveryStatusText = (status) => {
-  switch (status) {
-    case 'PENDING':
-      return 'En attente';
-    case 'IN_PROGRESS':
-      return 'En cours';
-    case 'COMPLETED':
-      return 'Terminé';
-    case 'FAILED':
-      return 'Échec';
-    default:
-      return status;
-  }
-};
+import StatusChip from '../../../components/common/StatusChip';
 
 /**
  * Liste des points de livraison récents.
@@ -97,7 +64,7 @@ const RecentDeliveriesList = ({ deliveries = [], loading }) => {
               }
             >
               <ListItemAvatar>
-                <Avatar sx={{ bgcolor: getDeliveryStatusColor(point.deliveryStatus) + '.light' }}>
+                <Avatar sx={{ bgcolor: 'info.light' }}>
                   <ShippingIcon />
                 </Avatar>
               </ListItemAvatar>
@@ -111,7 +78,7 @@ const RecentDeliveriesList = ({ deliveries = [], loading }) => {
                     <br />
                     <Typography component="span" variant="body2" color="textSecondary">
                       {point.plannedTime && formatDate(point.plannedTime, 'datetime')} •
-                      Statut: {getDeliveryStatusText(point.deliveryStatus)}
+                      <StatusChip status={point.deliveryStatus} type="delivery" />
                     </Typography>
                   </>
                 }

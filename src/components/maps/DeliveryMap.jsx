@@ -1,4 +1,3 @@
-// src/components/maps/DeliveryMap.jsx
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -23,60 +22,7 @@ import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { geocodeAddress, calculateRoute } from '../../utils/geocoding';
 import { isMobileDevice, isIOS, openNavigation } from '../../utils/navigationUtils';
 import { createColoredRouteSegments } from '../../utils/mapUtils';
-
-// Correction des icônes Leaflet pour React
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
-
-// Icône personnalisée pour le chauffeur
-const driverIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-});
-
-// Icônes personnalisées pour les points de livraison selon leur statut
-const deliveryIcons = {
-  PENDING: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  }),
-  IN_PROGRESS: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  }),
-  COMPLETED: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  }),
-  FAILED: new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-  }),
-};
+import { DRIVER_ICON } from '../../utils/mapIcons';
 
 const STATUS_COLORS = {
   PENDING: '#6b7280',
@@ -129,7 +75,6 @@ const createNumberedIcon = (label, status = 'PENDING', isNextStop = false) => {
   });
 };
 
-// Composant pour suivre la position de l'utilisateur
 const LocationMarker = ({ onLocationUpdate, onPositionChange }) => {
   const [position, setPosition] = useState(null);
 
@@ -153,16 +98,15 @@ const LocationMarker = ({ onLocationUpdate, onPositionChange }) => {
   useEffect(() => {
     map.locate({ setView: true });
 
-    // Mettre à jour la position régulièrement
     const interval = setInterval(() => {
       map.locate();
-    }, 30000); // toutes les 30 secondes
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [map]);
 
   return position === null ? null : (
-    <Marker position={position} icon={driverIcon}>
+    <Marker position={position} icon={DRIVER_ICON}>
       <Popup>
         <Typography variant="subtitle2">Votre position</Typography>
         <Typography variant="caption">Chauffeur</Typography>
@@ -171,12 +115,10 @@ const LocationMarker = ({ onLocationUpdate, onPositionChange }) => {
   );
 };
 
-// Composant pour recentrer la carte sur la position du chauffeur
 const RecenterControl = ({ driverPosition }) => {
   const map = useMap();
 
   useEffect(() => {
-    // Exposer la fonction de recentrage
     if (driverPosition) {
       map._recenterOnDriver = () => {
         map.flyTo(driverPosition, 15, {
@@ -195,15 +137,15 @@ const DeliveryMap = ({
   onLocationUpdate,
   loading = false
 }) => {
-  const [center, setCenter] = useState([48.8566, 2.3522]); // Paris par défaut
+  const [center, setCenter] = useState([48.8566, 2.3522]);
   const [zoom, setZoom] = useState(13);
   const [routePoints, setRoutePoints] = useState([]);
   const [driverPosition, setDriverPosition] = useState(null);
   const [geocoding, setGeocoding] = useState(false);
-  const [routeGeometry, setRouteGeometry] = useState(null); // Itinéraire calculé
-  const [routeInfo, setRouteInfo] = useState(null); // Distance et durée
-  const [routeSegments, setRouteSegments] = useState([]); // Segments colorés pour l'itinéraire calculé
-  const [fallbackSegments, setFallbackSegments] = useState([]); // Segments colorés pour ligne directe
+  const [routeGeometry, setRouteGeometry] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [routeSegments, setRouteSegments] = useState([]);
+  const [fallbackSegments, setFallbackSegments] = useState([]);
   const [mapInstance, setMapInstance] = useState(null);
   const [nextStopIndex, setNextStopIndex] = useState(-1);
 
@@ -219,15 +161,11 @@ const DeliveryMap = ({
       for (const point of route.deliveryPoints) {
         let position = null;
 
-        // Vérifier si les coordonnées existent déjà
         if (point.address && point.address.latitude && point.address.longitude) {
           position = [point.address.latitude, point.address.longitude];
         }
-        // Sinon, géocoder l'adresse
         else if (point.address && point.address.street && point.address.city) {
           position = await geocodeAddress(point.address);
-
-          // Petite pause pour respecter les limites d'API (1 req/sec)
           await new Promise(resolve => setTimeout(resolve, 1100));
         }
 
@@ -276,20 +214,16 @@ const DeliveryMap = ({
             duration: routeResult.duration
           });
 
-          // Créer les segments colorés pour l'itinéraire calculé
           const segments = createColoredRouteSegments(routeResult.coordinates);
           setRouteSegments(segments);
         }
       }
 
-      // Créer les segments colorés pour la ligne de secours (directe)
       const fallbackPositions = points.map(p => p.position);
       const fallbackSegs = createColoredRouteSegments(fallbackPositions);
       setFallbackSegments(fallbackSegs);
 
-      // Calculer le centre et le zoom de la carte
       if (points.length > 0) {
-        // Calculer les limites des points
         const latitudes = points.map(p => p.position[0]);
         const longitudes = points.map(p => p.position[1]);
 
@@ -298,17 +232,15 @@ const DeliveryMap = ({
         const minLng = Math.min(...longitudes);
         const maxLng = Math.max(...longitudes);
 
-        // Calculer le centre
         const centerLat = (minLat + maxLat) / 2;
         const centerLng = (minLng + maxLng) / 2;
         setCenter([centerLat, centerLng]);
 
-        // Calculer le zoom (basé sur l'étendue)
         const latRange = maxLat - minLat;
         const lngRange = maxLng - minLng;
         const range = Math.max(latRange, lngRange);
 
-        let newZoom = 13; // zoom par défaut
+        let newZoom = 13;
         if (range > 0.2) newZoom = 10;
         if (range > 0.5) newZoom = 9;
         if (range > 1) newZoom = 8;
@@ -322,7 +254,6 @@ const DeliveryMap = ({
     loadPointsWithGeocode();
   }, [route]);
 
-  // Recalculer l'itinéraire quand la position du chauffeur change
   useEffect(() => {
     const calculateRouteWithDriver = async () => {
       if (driverPosition && routePoints.length > 0) {
@@ -336,12 +267,10 @@ const DeliveryMap = ({
             duration: routeResult.duration
           });
 
-          // Créer les segments colorés pour l'itinéraire calculé avec le chauffeur
           const segments = createColoredRouteSegments(routeResult.coordinates);
           setRouteSegments(segments);
         }
 
-        // Mettre à jour aussi les segments de secours
         const fallbackPositions = [driverPosition, ...routePoints.map(p => p.position)];
         const fallbackSegs = createColoredRouteSegments(fallbackPositions);
         setFallbackSegments(fallbackSegs);
@@ -351,7 +280,6 @@ const DeliveryMap = ({
     calculateRouteWithDriver();
   }, [driverPosition, routePoints]);
 
-  // Si pas de route, afficher un message
   if (!route || !route.deliveryPoints || route.deliveryPoints.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -360,12 +288,10 @@ const DeliveryMap = ({
     );
   }
 
-  // Fonction pour gérer la mise à jour de la position du chauffeur
   const handleDriverPositionChange = (coords) => {
     setDriverPosition(coords);
   };
 
-  // Fonction pour mettre à jour le statut d'un point de livraison
   const handleStatusUpdate = (pointId, newStatus) => {
     if (onStatusUpdate) {
       onStatusUpdate(pointId, newStatus);
@@ -377,7 +303,6 @@ const DeliveryMap = ({
     : null;
 
 
-  // Fonction pour recentrer sur la position du chauffeur
   const handleRecenterOnDriver = () => {
     if (driverPosition && mapInstance) {
       mapInstance.flyTo(driverPosition, 15, {
@@ -406,7 +331,6 @@ const DeliveryMap = ({
     return { opacity: 0.6, weight: 4 };
   };
 
-  // Actions du Speed Dial pour la navigation
   const isMobile = isMobileDevice();
   const navigationActions = [
     {
@@ -416,7 +340,6 @@ const DeliveryMap = ({
     }
   ];
 
-  // Ajouter Waze uniquement sur mobile
   if (isMobile) {
     navigationActions.push({
       icon: <NavigationIcon />,
@@ -425,7 +348,6 @@ const DeliveryMap = ({
     });
   }
 
-  // Ajouter Apple Plans uniquement sur iOS
   if (isIOS()) {
     navigationActions.push({
       icon: <MapIcon />,
@@ -449,10 +371,8 @@ const DeliveryMap = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Contrôle pour recentrer sur le chauffeur */}
         <RecenterControl driverPosition={driverPosition} />
 
-        {/* Tracer l'itinéraire routier calculé avec segments colorés */}
         {routeGeometry && routeGeometry.length > 1 && routeSegments.length > 0 && (
           <>
             {routeSegments.map((segment, index) => {
@@ -471,7 +391,6 @@ const DeliveryMap = ({
           </>
         )}
 
-        {/* Si pas d'itinéraire calculé, afficher ligne droite de secours avec segments colorés */}
         {!routeGeometry && routePoints.length > 1 && fallbackSegments.length > 0 && (
           <>
             {fallbackSegments.map((segment, index) => {
@@ -490,13 +409,11 @@ const DeliveryMap = ({
           </>
         )}
 
-        {/* Marqueur de localisation du chauffeur */}
         <LocationMarker
           onLocationUpdate={onLocationUpdate}
           onPositionChange={handleDriverPositionChange}
         />
 
-        {/* Afficher les infos de l'itinéraire */}
         {routeInfo && (
           <Box
             sx={{
@@ -545,7 +462,6 @@ const DeliveryMap = ({
           </Box>
         )}
 
-        {/* Points de livraison */}
         {routePoints.map((point, index) => {
           const isNextStopMarker = nextStopIndex === index;
           const markerIcon = createNumberedIcon(index + 1, point.status, isNextStopMarker);
@@ -603,7 +519,6 @@ const DeliveryMap = ({
                     </Typography>
                   )}
 
-                  {/* Boutons d'action pour mettre à jour le statut */}
                   {point.status !== 'COMPLETED' && point.status !== 'FAILED' && (
                     <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
                       <Button
@@ -629,7 +544,6 @@ const DeliveryMap = ({
                     </Box>
                   )}
 
-                  {/* Bouton pour ouvrir Google Maps */}
                   <Box sx={{ mt: 2 }}>
                     <Button
                       size="small"
@@ -650,7 +564,6 @@ const DeliveryMap = ({
         })}
       </MapContainer>
 
-      {/* Overlay pour l'indicateur de chargement ou géocodage */}
       {(loading || geocoding) && (
         <Box
           sx={{
@@ -676,7 +589,6 @@ const DeliveryMap = ({
         </Box>
       )}
 
-      {/* Speed Dial pour la navigation externe */}
       {routePoints.length > 0 && (
         <SpeedDial
           ariaLabel="Navigation externe"
@@ -700,7 +612,6 @@ const DeliveryMap = ({
         </SpeedDial>
       )}
 
-      {/* Bouton pour recentrer sur la position du chauffeur */}
       {driverPosition && (
         <Fab
           color="secondary"

@@ -11,11 +11,11 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Chip,
   IconButton,
   CircularProgress,
   Tooltip
 } from '@mui/material';
+import StatusChip from '../../../components/common/StatusChip';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -71,15 +71,7 @@ const RouteTable = ({
                     <TableCell>{route.driver?.username || 'Non assigné'}</TableCell>
                     <TableCell>{route.dispatcher?.username || 'Non assigné'}</TableCell>
                     <TableCell>
-                      <Chip
-                        size="small"
-                        label={route.status}
-                        color={
-                          route.status === 'COMPLETED' ? 'success' :
-                            route.status === 'IN_PROGRESS' ? 'primary' :
-                              route.status === 'CANCELLED' ? 'error' : 'default'
-                        }
-                      />
+                      <StatusChip status={route.status} />
                     </TableCell>
                     <TableCell>{route.deliveryPoints?.length || 0}</TableCell>
                     <TableCell>

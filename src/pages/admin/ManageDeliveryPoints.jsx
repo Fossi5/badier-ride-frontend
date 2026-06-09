@@ -14,7 +14,6 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -54,6 +53,7 @@ import {
 
 // Import du contexte d'alerte
 import { useAlert } from '../../context/AlertContext';
+import StatusChip from '../../components/common/StatusChip';
 
 const ManageDeliveryPoints = () => {
   const [deliveryPoints, setDeliveryPoints] = useState([]);
@@ -251,36 +251,6 @@ const ManageDeliveryPoints = () => {
     return `${street}, ${postalCode} ${city}, ${country || ''}`.trim();
   };
 
-  // Fonction pour obtenir la couleur selon le statut
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'success';
-      case 'IN_PROGRESS':
-        return 'warning';
-      case 'FAILED':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  // Fonction pour obtenir le texte du statut
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'PENDING':
-        return 'En attente';
-      case 'IN_PROGRESS':
-        return 'En cours';
-      case 'COMPLETED':
-        return 'Terminé';
-      case 'FAILED':
-        return 'Échec';
-      default:
-        return status;
-    }
-  };
-
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -377,11 +347,7 @@ const ManageDeliveryPoints = () => {
                         {point.plannedTime ? format(new Date(point.plannedTime), 'dd/MM/yyyy HH:mm') : '-'}
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          size="small"
-                          label={getStatusText(point.deliveryStatus)}
-                          color={getStatusColor(point.deliveryStatus)}
-                        />
+                        <StatusChip status={point.deliveryStatus} type="delivery" />
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex' }}>

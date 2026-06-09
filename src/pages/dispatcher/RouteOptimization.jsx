@@ -1,4 +1,3 @@
-// src/pages/dispatcher/RouteOptimization.jsx
 import React, { useState, useEffect } from 'react';
 import { 
   Container, 
@@ -245,8 +244,18 @@ const RouteOptimization = () => {
                 </ListItem>
               </List>
               
+              {distance !== null && (
+                <Chip
+                  icon={<RouteIcon />}
+                  label={`Distance totale : ${distance.toFixed(1)} km`}
+                  color="primary"
+                  variant="outlined"
+                  sx={{ mt: 1 }}
+                />
+              )}
+
               <Divider sx={{ my: 2 }} />
-              
+
               <Typography variant="h6" gutterBottom>
                 Points de livraison ({currentRoute.deliveryPoints.length})
               </Typography>

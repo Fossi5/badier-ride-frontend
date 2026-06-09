@@ -7,7 +7,6 @@ import {
   Paper,
   Grid,
   Divider,
-  Chip,
   List,
   ListItem,
   ListItemText,
@@ -47,6 +46,7 @@ import { updateDriverLocation, updateDriverAvailability } from '../../api/driver
 
 // Import du contexte d'alerte
 import { useAlert } from '../../context/AlertContext';
+import StatusChip from '../../components/common/StatusChip';
 
 const RouteDetails = () => {
   const { id } = useParams();
@@ -174,42 +174,6 @@ const RouteDetails = () => {
     }
   };
 
-  // Fonction pour obtenir la couleur selon le statut
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'success';
-      case 'IN_PROGRESS':
-        return 'primary';
-      case 'FAILED':
-        return 'error';
-      case 'CANCELLED':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  // Fonction pour obtenir le texte du statut
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'PENDING':
-        return 'En attente';
-      case 'IN_PROGRESS':
-        return 'En cours';
-      case 'COMPLETED':
-        return 'Terminé';
-      case 'FAILED':
-        return 'Échec';
-      case 'CANCELLED':
-        return 'Annulé';
-      case 'PLANNED':
-        return 'Planifié';
-      default:
-        return status;
-    }
-  };
-
   // Fonction pour formater l'adresse
   const formatAddress = (address) => {
     if (!address) return 'Adresse inconnue';
@@ -283,11 +247,7 @@ const RouteDetails = () => {
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-              <Chip
-                label={getStatusText(route.status)}
-                color={getStatusColor(route.status)}
-                sx={{ mr: 2 }}
-              />
+              <StatusChip status={route.status} sx={{ mr: 2 }} />
 
               <Typography variant="body2" color="text.secondary">
                 Progression: {progress}%
@@ -443,11 +403,7 @@ const RouteDetails = () => {
                       )}
 
                       {(point.deliveryStatus === 'COMPLETED' || point.deliveryStatus === 'FAILED') && (
-                        <Chip
-                          label={getStatusText(point.deliveryStatus)}
-                          color={getStatusColor(point.deliveryStatus)}
-                          size="small"
-                        />
+                        <StatusChip status={point.deliveryStatus} type="delivery" />
                       )}
                     </ListItemSecondaryAction>
                   </ListItem>
