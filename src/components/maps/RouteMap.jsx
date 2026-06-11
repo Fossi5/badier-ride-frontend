@@ -1,240 +1,186 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Box, Typography, Chip, Fab, CircularProgress } from '@mui/material';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
-import { createColoredRouteSegments } from '../../utils/mapUtils';
 import { calculateRoute } from '../../utils/geocoding';
 import { DRIVER_ICON, getStatusIcon } from '../../utils/mapIcons';
 
-const RecenterControl = ({ driverPosition }) => {
+const MapControl = ({ positions, driverPosition, mapRef }) => {
   const map = useMap();
 
   useEffect(() => {
+    if (mapRef) mapRef.current = map;
+  }, [map, mapRef]);
+
+  useEffect(() => {
     if (driverPosition) {
-      map._recenterOnDriver = () => {
-        map.flyTo(driverPosition, 15, {
-          duration: 1
-        });
-      };
+      map._recenterOnDriver = () => map.flyTo(driverPosition, 15, { duration: 1 });
     }
   }, [driverPosition, map]);
+
+  useEffect(() => {
+    if (positions && positions.length > 0) {
+      try {
+        const bounds = L.latLngBounds(positions);
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [48, 48] });
+        }
+      } catch (_e) {
+        // positions invalides
+      }
+    }
+  }, [positions, map]);
 
   return null;
 };
 
-const RouteMap = ({ route }) => {
+const RouteMap = ({ route, onRouteInfo }) => {
   const [driverPosition, setDriverPosition] = useState(null);
   const [routePoints, setRoutePoints] = useState([]);
-  const [center, setCenter] = useState([48.8566, 2.3522]);
-  const [zoom, setZoom] = useState(13);
-  const [routeSegments, setRouteSegments] = useState([]);
-  const [fallbackSegments, setFallbackSegments] = useState([]);
   const [routeGeometry, setRouteGeometry] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [calculatingRoute, setCalculatingRoute] = useState(false);
-  const [mapInstance, setMapInstance] = useState(null);
+  const mapRef = React.useRef(null);
+
+  const allPositions = [
+    ...(driverPosition ? [driverPosition] : []),
+    ...routePoints.map(p => p.position)
+  ];
 
   useEffect(() => {
     if (!route) return;
 
+    setRouteGeometry(null);
+    setRouteInfo(null);
+
     const initializeRoute = async () => {
-      if (route.driver && route.driver.latitude && route.driver.longitude) {
+      if (route.driver?.latitude && route.driver?.longitude) {
         setDriverPosition([route.driver.latitude, route.driver.longitude]);
       }
 
-      if (route.deliveryPoints && route.deliveryPoints.length > 0) {
-        const points = route.deliveryPoints
-          .filter(point => point.address && point.address.latitude && point.address.longitude)
-          .map(point => ({
-            id: point.id,
-            position: [point.address.latitude, point.address.longitude],
-            clientName: point.clientName,
-            address: `${point.address.street}, ${point.address.city}, ${point.address.postalCode}`,
-            status: point.deliveryStatus,
-            time: point.plannedTime,
-            actualTime: point.actualTime,
-            phone: point.clientPhoneNumber,
-            notes: point.clientNote
-          }));
-        
-        if (points.length > 1) {
-          setCalculatingRoute(true);
-          const allCoordinates = points.map(p => p.position);
-          const routeResult = await calculateRoute(allCoordinates);
+      if (!route.deliveryPoints?.length) return;
 
-          if (routeResult) {
-            setRouteGeometry(routeResult.coordinates);
-            setRouteInfo({
-              distance: routeResult.distance,
-              duration: routeResult.duration
-            });
+      const points = route.deliveryPoints
+        .filter(p => p.address?.latitude && p.address?.longitude)
+        .map(p => ({
+          id: p.id,
+          position: [p.address.latitude, p.address.longitude],
+          clientName: p.clientName,
+          address: `${p.address.street}, ${p.address.city}, ${p.address.postalCode}`,
+          status: p.deliveryStatus,
+          time: p.plannedTime,
+          actualTime: p.actualTime,
+          phone: p.clientPhoneNumber,
+          notes: p.clientNote
+        }));
 
-            const segments = createColoredRouteSegments(routeResult.coordinates);
-            setRouteSegments(segments);
-          }
-          setCalculatingRoute(false);
+      setRoutePoints(points);
+
+      if (points.length > 1) {
+        setCalculatingRoute(true);
+        const result = await calculateRoute(points.map(p => p.position));
+        if (result) {
+          setRouteGeometry(result.coordinates);
+          const info = { distance: result.distance, duration: result.duration };
+          setRouteInfo(info);
+          if (onRouteInfo) onRouteInfo(info);
         }
-
-        const fallbackPositions = points.map(p => p.position);
-        const fallbackSegs = createColoredRouteSegments(fallbackPositions);
-        setFallbackSegments(fallbackSegs);
-
-        setRoutePoints(points);
-
-        if (points.length > 0) {
-          const latitudes = points.map(p => p.position[0]);
-          const longitudes = points.map(p => p.position[1]);
-
-          if (driverPosition) {
-            latitudes.push(driverPosition[0]);
-            longitudes.push(driverPosition[1]);
-          }
-
-          const minLat = Math.min(...latitudes);
-          const maxLat = Math.max(...latitudes);
-          const minLng = Math.min(...longitudes);
-          const maxLng = Math.max(...longitudes);
-          const centerLat = (minLat + maxLat) / 2;
-          const centerLng = (minLng + maxLng) / 2;
-          setCenter([centerLat, centerLng]);
-
-          const latRange = maxLat - minLat;
-          const lngRange = maxLng - minLng;
-          const range = Math.max(latRange, lngRange);
-
-          let newZoom = 13;
-          if (range > 0.2) newZoom = 10;
-          if (range > 0.5) newZoom = 9;
-          if (range > 1) newZoom = 8;
-          if (range > 2) newZoom = 7;
-          if (range > 5) newZoom = 6;
-
-          setZoom(newZoom);
-
-          const polylinePositions = points.map(point => point.position);
-          if (driverPosition) {
-            polylinePositions.unshift(driverPosition);
-          }
-
-          const segments = createColoredRouteSegments(polylinePositions);
-          setRouteSegments(segments);
-        }
+        setCalculatingRoute(false);
       }
     };
 
     initializeRoute();
-  }, [route]);
+  }, [route]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleRecenterOnDriver = () => {
-    if (driverPosition && mapInstance) {
-      mapInstance.flyTo(driverPosition, 15, {
-        duration: 1
-      });
+  const handleRecenter = () => {
+    if (driverPosition && mapRef.current) {
+      mapRef.current.flyTo(driverPosition, 15, { duration: 1 });
     }
   };
+
+  const formatValue = (val, unit) =>
+    typeof val === 'number' ? `${val.toFixed(1)} ${unit}` : val;
 
   return (
     <Box sx={{ position: 'relative', height: '100%', width: '100%' }}>
       <MapContainer
-        center={center}
-        zoom={zoom}
+        center={[50.8503, 4.3517]}
+        zoom={12}
         style={{ height: '100%', width: '100%' }}
-        ref={(map) => {
-          if (map) setMapInstance(map);
-        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <RecenterControl driverPosition={driverPosition} />
+        <MapControl
+          positions={allPositions}
+          driverPosition={driverPosition}
+          mapRef={mapRef}
+        />
 
-        {routeGeometry && routeGeometry.length > 1 && routeSegments.length > 0 && (
+        {routeGeometry?.length > 1 && (
           <>
-            {routeSegments.map((segment, index) => (
-              <Polyline
-                key={`route-segment-${index}`}
-                positions={segment.positions}
-                color={segment.color}
-                weight={5}
-                opacity={0.8}
-                lineJoin="round"
-              />
-            ))}
+            <Polyline positions={routeGeometry} color="#ffffff" weight={8} opacity={1} lineJoin="round" />
+            <Polyline positions={routeGeometry} color="#1976d2" weight={5} opacity={0.9} lineJoin="round" />
           </>
         )}
 
-        {!routeGeometry && routePoints.length > 1 && fallbackSegments.length > 0 && (
+        {!routeGeometry && routePoints.length > 1 && (
           <>
-            {fallbackSegments.map((segment, index) => (
-              <Polyline
-                key={`fallback-segment-${index}`}
-                positions={segment.positions}
-                color={segment.color}
-                weight={4}
-                opacity={0.6}
-                dashArray="5, 10"
-              />
-            ))}
+            <Polyline
+              positions={routePoints.map(p => p.position)}
+              color="#1976d2"
+              weight={3}
+              opacity={0.5}
+              dashArray="8, 10"
+            />
           </>
         )}
 
         {driverPosition && (
           <Marker position={driverPosition} icon={DRIVER_ICON}>
             <Popup>
-              <Typography variant="subtitle2">Chauffeur: {route.driver.username}</Typography>
+              <Typography variant="subtitle2">Chauffeur : {route.driver?.username}</Typography>
               <Typography variant="body2">Position actuelle</Typography>
             </Popup>
           </Marker>
         )}
 
         {routePoints.map((point, index) => (
-          <Marker
-            key={point.id}
-            position={point.position}
-            icon={getStatusIcon(point.status)}
-          >
+          <Marker key={point.id} position={point.position} icon={getStatusIcon(point.status)}>
             <Popup>
               <Box sx={{ minWidth: 200 }}>
                 <Typography variant="subtitle1">{index + 1}. {point.clientName}</Typography>
                 <Typography variant="body2">{point.address}</Typography>
-
                 <Box sx={{ mt: 1, mb: 1 }}>
                   <Chip
                     size="small"
                     label={point.status}
                     color={
                       point.status === 'COMPLETED' ? 'success' :
-                        point.status === 'IN_PROGRESS' ? 'warning' :
-                          point.status === 'FAILED' ? 'error' : 'default'
+                      point.status === 'IN_PROGRESS' ? 'warning' :
+                      point.status === 'FAILED' ? 'error' : 'default'
                     }
                   />
                 </Box>
-
                 {point.time && (
                   <Typography variant="body2">
-                    <strong>Heure prévue:</strong> {new Date(point.time).toLocaleTimeString()}
+                    <strong>Heure prévue :</strong> {new Date(point.time).toLocaleTimeString()}
                   </Typography>
                 )}
-
                 {point.actualTime && (
                   <Typography variant="body2">
-                    <strong>Heure réelle:</strong> {new Date(point.actualTime).toLocaleTimeString()}
+                    <strong>Heure réelle :</strong> {new Date(point.actualTime).toLocaleTimeString()}
                   </Typography>
                 )}
-
                 {point.phone && (
-                  <Typography variant="body2">
-                    <strong>Téléphone:</strong> {point.phone}
-                  </Typography>
+                  <Typography variant="body2"><strong>Tél :</strong> {point.phone}</Typography>
                 )}
-
                 {point.notes && (
-                  <Typography variant="body2">
-                    <strong>Notes:</strong> {point.notes}
-                  </Typography>
+                  <Typography variant="body2"><strong>Notes :</strong> {point.notes}</Typography>
                 )}
               </Box>
             </Popup>
@@ -243,47 +189,27 @@ const RouteMap = ({ route }) => {
       </MapContainer>
 
       {calculatingRoute && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 16,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            bgcolor: 'background.paper',
-            px: 2,
-            py: 1,
-            borderRadius: 1,
-            boxShadow: 3,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            zIndex: 1000
-          }}
-        >
+        <Box sx={{
+          position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+          bgcolor: 'background.paper', px: 2, py: 1, borderRadius: 1, boxShadow: 3,
+          display: 'flex', alignItems: 'center', gap: 1, zIndex: 1000
+        }}>
           <CircularProgress size={20} />
-          <Typography variant="body2">Calcul de l'itinéraire...</Typography>
+          <Typography variant="body2">Calcul de l'itinéraire…</Typography>
         </Box>
       )}
 
       {routeInfo && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 16,
-            left: 16,
-            bgcolor: 'background.paper',
-            px: 2,
-            py: 1,
-            borderRadius: 1,
-            boxShadow: 3,
-            zIndex: 1000
-          }}
-        >
+        <Box sx={{
+          position: 'absolute', top: 16, left: 16,
+          bgcolor: 'background.paper', px: 2, py: 1,
+          borderRadius: 1, boxShadow: 3, zIndex: 1000
+        }}>
           <Typography variant="body2">
-            <strong>Distance:</strong> {routeInfo.distance.toFixed(1)} km
+            <strong>Distance :</strong> {formatValue(routeInfo.distance, 'km')}
           </Typography>
           <Typography variant="body2">
-            <strong>Durée:</strong> {Math.round(routeInfo.duration)} min
+            <strong>Durée :</strong> {formatValue(routeInfo.duration, 'min')}
           </Typography>
         </Box>
       )}
@@ -292,13 +218,8 @@ const RouteMap = ({ route }) => {
         <Fab
           color="secondary"
           aria-label="recentrer sur la position du chauffeur"
-          sx={{
-            position: 'absolute',
-            bottom: 16,
-            right: 16,
-            boxShadow: 3
-          }}
-          onClick={handleRecenterOnDriver}
+          sx={{ position: 'absolute', bottom: 16, right: 16, boxShadow: 3 }}
+          onClick={handleRecenter}
         >
           <MyLocationIcon />
         </Fab>

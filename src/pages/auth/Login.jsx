@@ -1,43 +1,40 @@
-// src/pages/auth/Login.jsx
 import React, { useState } from 'react';
-import { Box, Container, Typography, TextField, Button, Paper, Avatar } from '@mui/material';
+import {
+  Box, Container, Typography, TextField, Button,
+  Paper, Avatar, InputAdornment, IconButton
+} from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useAuth } from '../../context/AuthContext';
 import { useAlert } from '../../context/AlertContext';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const { login } = useAuth();
   const { error: showError } = useAlert();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!username || !password) {
       showError('Veuillez remplir tous les champs');
       return;
     }
-    
     setLoading(true);
-    
     try {
       await login(username, password);
-      // La redirection est gérée dans le contexte d'authentification
     } catch (err) {
-      let errorMessage = 'Erreur lors de la connexion';
-      
       if (err.response) {
-        // Le serveur a répondu avec un code d'erreur
-        errorMessage = err.response.data.error || 'Identifiants incorrects';
+        showError(err.response.data.error || 'Identifiants incorrects');
       } else if (err.request) {
-        // Pas de réponse du serveur
-        errorMessage = 'Serveur inaccessible. Veuillez réessayer plus tard.';
+        showError('Serveur inaccessible. Veuillez réessayer plus tard.');
+      } else {
+        showError('Erreur lors de la connexion');
       }
-      
-      showError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -49,17 +46,16 @@ const Login = () => {
         <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
           <LockOutlinedIcon />
         </Avatar>
-        
+
         <Typography component="h1" variant="h5">
           Connexion à Badier Ride
         </Typography>
-        
+
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
           <TextField
             margin="normal"
             required
             fullWidth
-            id="username"
             label="Nom d'utilisateur"
             name="username"
             autoComplete="username"
@@ -69,21 +65,34 @@ const Login = () => {
             onChange={(e) => setUsername(e.target.value)}
             disabled={loading}
           />
-          
+
           <TextField
             margin="normal"
             required
             fullWidth
             name="password"
             label="Mot de passe"
-            type="password"
-            id="password"
+            type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(prev => !prev)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    edge="end"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
-          
+
           <Button
             type="submit"
             fullWidth

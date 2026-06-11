@@ -38,6 +38,7 @@ import { format } from 'date-fns';
 
 // Import des composants personnalisés
 import DeliveryMap from '../../components/maps/DeliveryMap';
+import ProofUpload from '../../components/delivery/ProofUpload';
 
 // Import des services API
 import { getRouteById, updateRouteStatus } from '../../api/routes';
@@ -334,78 +335,89 @@ const RouteDetails = () => {
               {route.deliveryPoints.map((point, index) => (
                 <React.Fragment key={point.id}>
                   {index > 0 && <Divider />}
-                  <ListItem>
-                    <ListItemAvatar>
-                      <Avatar sx={{
-                        bgcolor:
-                          point.deliveryStatus === 'COMPLETED' ? 'success.main' :
-                            point.deliveryStatus === 'IN_PROGRESS' ? 'warning.main' :
-                              point.deliveryStatus === 'FAILED' ? 'error.main' :
-                                'grey.400'
-                      }}>
-                        <LocationIcon />
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={point.clientName}
-                      secondary={
-                        <>
-                          <Typography variant="body2" component="span" display="block">
-                            {formatAddress(point.address)}
-                          </Typography>
-                          {point.clientPhoneNumber && (
+                  <ListItem sx={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <Box sx={{ display: 'flex', width: '100%', alignItems: 'center' }}>
+                      <ListItemAvatar>
+                        <Avatar sx={{
+                          bgcolor:
+                            point.deliveryStatus === 'COMPLETED' ? 'success.main' :
+                              point.deliveryStatus === 'IN_PROGRESS' ? 'warning.main' :
+                                point.deliveryStatus === 'FAILED' ? 'error.main' :
+                                  'grey.400'
+                        }}>
+                          <LocationIcon />
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={point.clientName}
+                        secondary={
+                          <>
                             <Typography variant="body2" component="span" display="block">
-                              <PhoneIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
-                              {point.clientPhoneNumber}
+                              {formatAddress(point.address)}
                             </Typography>
-                          )}
-                        </>
-                      }
-                    />
-                    <ListItemSecondaryAction>
-                      {point.deliveryStatus === 'PENDING' && route.status === 'IN_PROGRESS' && (
-                        <Tooltip title="Marquer comme en cours">
-                          <IconButton
-                            edge="end"
-                            onClick={() => handleStatusUpdate(point.id, 'IN_PROGRESS')}
-                            disabled={updating}
-                            color="warning"
-                          >
-                            <LocationIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-
-                      {point.deliveryStatus === 'IN_PROGRESS' && (
-                        <>
-                          <Tooltip title="Marquer comme livré">
+                            {point.clientPhoneNumber && (
+                              <Typography variant="body2" component="span" display="block">
+                                <PhoneIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+                                {point.clientPhoneNumber}
+                              </Typography>
+                            )}
+                          </>
+                        }
+                      />
+                      <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+                        {point.deliveryStatus === 'PENDING' && route.status === 'IN_PROGRESS' && (
+                          <Tooltip title="Marquer comme en cours">
                             <IconButton
                               edge="end"
-                              onClick={() => handleStatusUpdate(point.id, 'COMPLETED')}
+                              onClick={() => handleStatusUpdate(point.id, 'IN_PROGRESS')}
                               disabled={updating}
-                              color="success"
-                              sx={{ mr: 1 }}
+                              color="warning"
                             >
-                              <CheckCircleIcon />
+                              <LocationIcon />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Marquer comme échec">
-                            <IconButton
-                              edge="end"
-                              onClick={() => handleStatusUpdate(point.id, 'FAILED')}
-                              disabled={updating}
-                              color="error"
-                            >
-                              <CancelIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
+                        )}
 
-                      {(point.deliveryStatus === 'COMPLETED' || point.deliveryStatus === 'FAILED') && (
-                        <StatusChip status={point.deliveryStatus} type="delivery" />
-                      )}
-                    </ListItemSecondaryAction>
+                        {point.deliveryStatus === 'IN_PROGRESS' && (
+                          <>
+                            <Tooltip title="Marquer comme livré">
+                              <IconButton
+                                edge="end"
+                                onClick={() => handleStatusUpdate(point.id, 'COMPLETED')}
+                                disabled={updating}
+                                color="success"
+                                sx={{ mr: 1 }}
+                              >
+                                <CheckCircleIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Marquer comme échec">
+                              <IconButton
+                                edge="end"
+                                onClick={() => handleStatusUpdate(point.id, 'FAILED')}
+                                disabled={updating}
+                                color="error"
+                              >
+                                <CancelIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+
+                        {(point.deliveryStatus === 'COMPLETED' || point.deliveryStatus === 'FAILED') && (
+                          <StatusChip status={point.deliveryStatus} type="delivery" />
+                        )}
+                      </Box>
+                    </Box>
+                    {(point.deliveryStatus === 'IN_PROGRESS' || point.deliveryStatus === 'COMPLETED') && (
+                      <Box sx={{ width: '100%', mt: 1, pl: 7 }}>
+                        <ProofUpload
+                          routeId={id}
+                          deliveryPointId={point.id}
+                          onValidated={fetchRouteDetails}
+                        />
+                      </Box>
+                    )}
                   </ListItem>
                 </React.Fragment>
               ))}

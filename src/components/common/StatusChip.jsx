@@ -14,8 +14,29 @@ const DELIVERY_STATUS = {
   FAILED:      { label: 'Échoué',     color: 'error'   },
 };
 
+const ALERT_PRIORITY = {
+  LOW:      { label: 'Faible',    color: 'default' },
+  MEDIUM:   { label: 'Moyen',     color: 'warning' },
+  HIGH:     { label: 'Élevé',     color: 'error'   },
+  CRITICAL: { label: 'Critique',  color: 'error'   },
+};
+
+const ALERT_STATUS = {
+  NEW:         { label: 'Nouveau',     color: 'warning' },
+  IN_PROGRESS: { label: 'En cours',    color: 'info'    },
+  RESOLVED:    { label: 'Résolu',      color: 'success' },
+  CLOSED:      { label: 'Fermé',       color: 'default' },
+};
+
+const MAPS = {
+  route:          ROUTE_STATUS,
+  delivery:       DELIVERY_STATUS,
+  'alert-priority': ALERT_PRIORITY,
+  'alert-status':   ALERT_STATUS,
+};
+
 export default function StatusChip({ status, type = 'route', size = 'small' }) {
-  const map = type === 'delivery' ? DELIVERY_STATUS : ROUTE_STATUS;
+  const map = MAPS[type] ?? ROUTE_STATUS;
   const config = map[status] ?? { label: status, color: 'default' };
   return <Chip label={config.label} color={config.color} size={size} />;
 }

@@ -5,33 +5,24 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AlertProvider } from './context/AlertContext';
 import { AuthProvider } from './context/AuthContext';
-
-// Composants de mise en page
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import AlertDisplay from './components/common/AlertDisplay';
 import ErrorBoundary from './components/common/ErrorBoundary';
-
-// Pages d'authentification
 import Login from './pages/auth/Login';
-
-// Pages administrateur
 import AdminDashboard from './pages/admin/Dashboard';
 import ManageDrivers from './pages/admin/ManageDrivers';
 import ManageDispatchers from './pages/admin/ManageDispatchers';
-
-// Pages répartiteur
 import DispatcherDashboard from './pages/dispatcher/Dashboard';
 import ManageRoutes from './pages/dispatcher/ManageRoutes';
 import RouteOptimization from './pages/dispatcher/RouteOptimization';
 import ManageDeliveryPoints from './pages/dispatcher/ManageDeliveryPoints';
-
-// Pages chauffeur
 import DriverDashboard from './pages/driver/Dashboard';
 import RouteDetails from './pages/driver/RouteDetails';
+import Notifications from './pages/shared/Notifications';
+import Alerts from './pages/dispatcher/Alerts';
 
-// Thème personnalisé
 const theme = createTheme({
   palette: {
     primary: {
@@ -50,9 +41,7 @@ const theme = createTheme({
   },
 });
 
-// Fonction pour vérifier le rôle et rediriger vers le tableau de bord approprié
 const RoleBasedRedirect = () => {
-  // Lire les métadonnées user depuis 'userInfo' (stocké après migration httpOnly cookie)
   const savedUser = localStorage.getItem('userInfo');
   const userRole = savedUser ? JSON.parse(savedUser).role : null;
 
@@ -78,39 +67,35 @@ function App() {
             <AlertDisplay />
             <ErrorBoundary>
             <Routes>
-              {/* Route publique */}
-              <Route path="/login" element={<Login />} />
+<Route path="/login" element={<Login />} />
 
-              {/* Redirection basée sur le rôle */}
-              <Route path="/" element={<RoleBasedRedirect />} />
+<Route path="/" element={<RoleBasedRedirect />} />
 
-              {/* Routes Admin */}
-              <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+<Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="drivers" element={<ManageDrivers />} />
                 <Route path="dispatchers" element={<ManageDispatchers />} />
                 <Route path="routes" element={<ManageRoutes />} />
-
-
                 <Route path="delivery-points" element={<ManageDeliveryPoints />} />
+                <Route path="notifications" element={<Notifications />} />
               </Route>
 
-              {/* Routes Dispatcher */}
-              <Route path="/dispatcher" element={<ProtectedRoute allowedRoles={['DISPATCHER']} />}>
+<Route path="/dispatcher" element={<ProtectedRoute allowedRoles={['DISPATCHER']} />}>
                 <Route path="dashboard" element={<DispatcherDashboard />} />
                 <Route path="routes" element={<ManageRoutes />} />
                 <Route path="optimize" element={<RouteOptimization />} />
                 <Route path="delivery-points" element={<ManageDeliveryPoints />} />
+                <Route path="alerts" element={<Alerts />} />
+                <Route path="notifications" element={<Notifications />} />
               </Route>
 
-              {/* Routes Driver */}
-              <Route path="/driver" element={<ProtectedRoute allowedRoles={['DRIVER']} />}>
+<Route path="/driver" element={<ProtectedRoute allowedRoles={['DRIVER']} />}>
                 <Route path="dashboard" element={<DriverDashboard />} />
                 <Route path="route/:id" element={<RouteDetails />} />
+                <Route path="notifications" element={<Notifications />} />
               </Route>
 
-              {/* Route par défaut - redirection vers la page de connexion */}
-              <Route path="*" element={<Navigate to="/login" />} />
+<Route path="*" element={<Navigate to="/login" />} />
             </Routes>
             </ErrorBoundary>
             <Footer />

@@ -28,7 +28,7 @@ import MapIcon from '@mui/icons-material/Map';
 
 import { useAlert } from '../../context/AlertContext';
 import RouteMap from '../../components/maps/RouteMap';
-import { getAllRoutes, optimizeRoute, getRouteDistance } from '../../api/routes';
+import { getAllRoutes, optimizeRoute } from '../../api/routes';
 
 const RouteOptimization = () => {
   const [routes, setRoutes] = useState([]);
@@ -65,24 +65,12 @@ const RouteOptimization = () => {
   const handleRouteChange = async (event) => {
     const routeId = event.target.value;
     setSelectedRoute(routeId);
-    
+
     if (routeId) {
-      const selectedRouteData = routes.find(route => route.id === routeId);
+      const selectedRouteData = routes.find(route => String(route.id) === String(routeId));
       setCurrentRoute(selectedRouteData);
       
-      try {
-        const distanceResponse = await getRouteDistance(routeId);
-        setDistance(distanceResponse.data);
-      } catch (err) {
-        console.log('Distance non disponible pour cette tournée:', err.response?.status || err.message);
-        setDistance(null);
-        
-        if (err.response && err.response.status === 401 && 
-            (err.response.data?.message?.toLowerCase().includes('token') ||
-             err.response.data?.message?.toLowerCase().includes('expired'))) {
-          error('Votre session a expiré. Veuillez vous reconnecter.');
-        }
-      }
+      setDistance(null);
     } else {
       setCurrentRoute(null);
       setDistance(null);
@@ -101,16 +89,10 @@ const RouteOptimization = () => {
       await fetchRoutes();
       
       if (selectedRoute) {
-        const updatedRoute = routes.find(route => route.id === selectedRoute);
+        const updatedRoute = routes.find(route => String(route.id) === String(selectedRoute));
         setCurrentRoute(updatedRoute);
         
-        try {
-          const distanceResponse = await getRouteDistance(selectedRoute);
-          setDistance(distanceResponse.data);
-        } catch (distErr) {
-          console.warn('Impossible de récupérer la distance après optimisation:', distErr);
-          setDistance(null);
-        }
+        setDistance(null);
       }
     } catch (err) {
       console.error('Erreur lors de l\'optimisation:', err);
@@ -149,7 +131,8 @@ const RouteOptimization = () => {
                 </MenuItem>
                 {routes.map((route) => (
                   <MenuItem key={route.id} value={route.id}>
-                    {route.name} - {route.deliveryPoints.length} points - {route.driver.username}
+                    {route.name} — {route.deliveryPoints?.length ?? 0} points
+                    {route.driver ? ` — ${route.driver.username}` : ''}
                   </MenuItem>
                 ))}
               </Select>
@@ -207,9 +190,9 @@ const RouteOptimization = () => {
                   <ListItemIcon>
                     <LocalShippingIcon />
                   </ListItemIcon>
-                  <ListItemText 
-                    primary="Chauffeur" 
-                    secondary={currentRoute.driver.username}
+                  <ListItemText
+                    primary="Chauffeur"
+                    secondary={currentRoute.driver?.username ?? 'Non assigné'}
                   />
                 </ListItem>
                 
@@ -217,9 +200,9 @@ const RouteOptimization = () => {
                   <ListItemIcon>
                     <PeopleIcon />
                   </ListItemIcon>
-                  <ListItemText 
-                    primary="Répartiteur" 
-                    secondary={currentRoute.dispatcher.username}
+                  <ListItemText
+                    primary="Répartiteur"
+                    secondary={currentRoute.dispatcher?.username ?? 'Non assigné'}
                   />
                 </ListItem>
                 
@@ -239,7 +222,7 @@ const RouteOptimization = () => {
                   </ListItemIcon>
                   <ListItemText 
                     primary="Distance totale" 
-                    secondary={distance ? `${distance.toFixed(2)} km` : 'Non disponible'}
+                    secondary={distance !== null ? `${distance.toFixed(2)} km` : 'Non disponible'}
                   />
                 </ListItem>
               </List>
@@ -287,7 +270,14 @@ const RouteOptimization = () => {
             <Paper sx={{ p: 0, overflow: 'hidden', height: '500px' }}>
               <Box sx={{ height: '100%', width: '100%' }}>
                 {currentRoute.deliveryPoints.length > 0 ? (
-                  <RouteMap route={currentRoute} />
+                  <RouteMap
+                    route={currentRoute}
+                    onRouteInfo={(info) => {
+                      const raw = info.distance;
+                      const km = typeof raw === 'number' ? raw : parseFloat(raw);
+                      if (!isNaN(km)) setDistance(km);
+                    }}
+                  />
                 ) : (
                   <Box 
                     sx={{ 

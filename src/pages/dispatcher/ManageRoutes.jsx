@@ -48,7 +48,7 @@ const ManageRoutes = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [totalElements, setTotalElements] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const [_totalPages, setTotalPages] = useState(0);
 
   // Ã‰tats pour les erreurs d'autorisations
   const [authErrors, setAuthErrors] = useState({
@@ -88,19 +88,18 @@ const ManageRoutes = () => {
   // Charger les données au montage du composant (drivers, dispatchers, delivery points)
   useEffect(() => {
     fetchData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Recharger les routes quand la page ou le nombre de lignes change
   useEffect(() => {
     fetchRoutes();
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!loading && shouldAutoOpenCreateDialog) {
       handleOpenCreateDialog();
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [loading, shouldAutoOpenCreateDialog, location.pathname, navigate]);
+  }, [loading, shouldAutoOpenCreateDialog, location.pathname, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fonction pour charger uniquement les tournées (paginées)
   const fetchRoutes = async () => {
@@ -152,8 +151,8 @@ const ManageRoutes = () => {
         try {
           const driversRes = await getAllDrivers();
           setDrivers(driversRes.data);
-        } catch (driverErr) {
-          // Échec du fallback chauffeurs : aucune liste disponible
+        } catch (_driverErr) {
+          // fallback échoué : aucune liste disponible
         }
       } else {
         error('Erreur lors du chargement des chauffeurs disponibles: ' + (err.response?.data?.error || err.message));
@@ -311,12 +310,11 @@ const ManageRoutes = () => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    // S'assurer que le dispatcherId est dÃ©fini pour un dispatcher
     let submissionData = { ...formData };
 
     if (currentUser?.role === 'DISPATCHER') {
       if (submissionData.dispatcherId) {
-        // Dispatcher ID dÃ©jÃ  dÃ©fini dans le formulaire, on le conserve
+        // Dispatcher ID dÃ©ja dÃ©fini dans le formulaire, on le conserve
       }
       else if (currentUser.username) {
         const currentDispatcher = dispatchers.find(d => d.username === currentUser.username);
@@ -397,11 +395,11 @@ const ManageRoutes = () => {
     }
   };
 
-  // Mise Ã  jour du statut d'une tournÃ©e
+  // Mise Ã jour du statut d'une tournÃ©e
   const handleUpdateStatus = async (routeId, newStatus) => {
     try {
       await updateRouteStatus(routeId, newStatus);
-      success(`Statut de la tournÃ©e mis Ã  jour: ${newStatus}`);
+      success(`Statut de la tournÃ©e mis Ã jour: ${newStatus}`);
       fetchRoutes();
     } catch (err) {
       if (err.response?.status === 403) {
@@ -417,7 +415,7 @@ const ManageRoutes = () => {
     navigate(`/dispatcher/optimize?routeId=${routeId}`);
   };
 
-  // DÃ©termine si l'utilisateur courant est le dispatcher assignÃ© Ã  la tournÃ©e
+  // DÃ©termine si l'utilisateur courant est le dispatcher assignÃ© Ã la tournÃ©e
   const isAssignedDispatcher = (route) => {
     return currentUser?.role === 'DISPATCHER' &&
       route.dispatcher &&
@@ -429,7 +427,7 @@ const ManageRoutes = () => {
     return currentUser?.role === 'ADMIN' || isAssignedDispatcher(route);
   };
 
-  // DÃ©terminer les drivers Ã  afficher dans la liste
+  // DÃ©terminer les drivers Ã afficher dans la liste
   const getDriversForList = () => {
     return authErrors.driversError ? drivers : availableDrivers.length > 0 ? availableDrivers : drivers;
   };
@@ -448,7 +446,7 @@ const ManageRoutes = () => {
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
-          Gestion des tournÃ©es
+          Gestion des tournées
         </Typography>
 
         <Box>
