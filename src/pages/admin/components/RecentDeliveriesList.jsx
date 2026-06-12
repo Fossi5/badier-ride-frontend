@@ -74,7 +74,7 @@ const RecentDeliveriesList = ({ deliveries = [], loading }) => {
                 secondary={
                   <>
                     <Typography component="span" variant="body2">
-                      {point.address.street}, {point.address.postalCode} {point.address.city}
+                      {point.address?.street}, {point.address?.postalCode} {point.address?.city}
                     </Typography>
                     <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
                       <Typography component="span" variant="body2" color="textSecondary">

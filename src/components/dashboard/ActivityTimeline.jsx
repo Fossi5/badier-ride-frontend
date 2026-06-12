@@ -53,7 +53,6 @@ const ActivityTimeline = ({
         return format(date, 'dd/MM/yyyy HH:mm');
       }
     } catch (e) {
-      console.error('Invalid date format:', e);
       return 'Date inconnue';
     }
   };

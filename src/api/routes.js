@@ -16,20 +16,10 @@ export const getRouteById = (id) => {
   return api.get(`/routes/${id}`);
 };
 
-// TODO: getRoutesByStatus n'est pas utilisé actuellement — à supprimer si inutile
-// export const getRoutesByStatus = (status) => {
-//   return api.get(`/routes/status/${status}`);
-// };
-
 // Récupérer les routes pour un chauffeur connecté
 export const getDriverRoutes = () => {
   return api.get("/routes/driver");
 };
-
-// TODO: getRoutesByDispatcher n'est pas utilisé actuellement — à supprimer si inutile
-// export const getRoutesByDispatcher = (dispatcherId) => {
-//   return api.get(`/routes/dispatcher/${dispatcherId}`);
-// };
 
 // Créer une nouvelle route
 export const createRoute = (routeData) => {
@@ -82,17 +72,6 @@ export const getRouteDistance = (routeId) => {
  * @param {Array} orderedPoints - Liste des points ordonnés avec propriétés id, sequenceOrder, isStartPoint, isEndPoint
  * @returns {Promise} - Réponse de l'API
  */
-export const updateRoutePointsOrder = async (routeId, orderedPoints) => {
-  try {
-    const response = await api.put(`/routes/${routeId}/delivery-points/order`, {
-      orderedPoints,
-    });
-    return response;
-  } catch (error) {
-    console.error(
-      "Erreur lors de la mise à jour de l'ordre des points de livraison:",
-      error,
-    );
-    throw error;
-  }
+export const updateRoutePointsOrder = (routeId, orderedPoints) => {
+  return api.put(`/routes/${routeId}/delivery-points/order`, { orderedPoints });
 };

@@ -121,7 +121,6 @@ const AddressForm = ({ initialData, onSubmit, onCancel, submitting }) => {
           setGeolocating(false);
         },
         (error) => {
-          console.error('Erreur de géolocalisation:', error);
           setGeolocating(false);
           
           let errorMsg = "Impossible d'obtenir votre position.";

@@ -56,8 +56,6 @@ const RouteOptimization = () => {
       const response = await getAllRoutes();
       setRoutes(response.data);
     } catch (err) {
-      console.error('Erreur lors du chargement des tournées:', err);
-      
       if (err.response && err.response.status === 401) {
         error('Session expirée. Vous allez être redirigé vers la page de connexion.');
       } else {
@@ -101,8 +99,6 @@ const RouteOptimization = () => {
         setDistance(null);
       }
     } catch (err) {
-      console.error('Erreur lors de l\'optimisation:', err);
-      
       if (err.response && err.response.status === 401) {
         error('Session expirée. Veuillez vous reconnecter.');
       } else {

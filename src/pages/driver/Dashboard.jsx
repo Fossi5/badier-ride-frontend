@@ -287,7 +287,7 @@ const DriverDashboard = () => {
                             secondary={
                               <Box>
                                 <Typography variant="body2" component="span" display="block">
-                                  {point.address.street}, {point.address.city}
+                                  {point.address?.street}, {point.address?.city}
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                                   <StatusChip status={point.deliveryStatus} type="delivery" size="small" />

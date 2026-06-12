@@ -72,7 +72,6 @@ const RouteDetails = () => {
           setCurrentPosition([position.coords.latitude, position.coords.longitude]);
         },
         (err) => {
-          console.error('Erreur de géolocalisation:', err);
           info('La géolocalisation n\'est pas activée ou disponible');
         }
       );
@@ -87,7 +86,6 @@ const RouteDetails = () => {
       setRoute(response.data);
     } catch (err) {
       error('Erreur lors du chargement des détails de la tournée: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
     } finally {
       setLoading(false);
     }
@@ -119,7 +117,6 @@ const RouteDetails = () => {
           await updateDriverAvailability(false);
           info('Vous avez été marqué comme indisponible');
         } catch (err) {
-          console.error('Erreur lors de la mise à jour de la disponibilité:', err);
         }
 
         // Rafraîchir la page après un court délai pour laisser les messages s'afficher
@@ -129,7 +126,6 @@ const RouteDetails = () => {
       }
     } catch (err) {
       error('Erreur lors de la mise à jour du statut: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
     } finally {
       setUpdating(false);
     }
@@ -143,7 +139,6 @@ const RouteDetails = () => {
       await updateDriverLocation(position[0], position[1]);
       // Pas besoin d'afficher une notification car c'est une mise à jour silencieuse et fréquente
     } catch (err) {
-      console.error('Erreur lors de la mise à jour de la position:', err);
     }
   };
 
@@ -156,7 +151,6 @@ const RouteDetails = () => {
       await fetchRouteDetails();
     } catch (err) {
       error('Erreur lors du démarrage de la tournée: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
     } finally {
       setUpdating(false);
     }
@@ -171,7 +165,6 @@ const RouteDetails = () => {
       await fetchRouteDetails();
     } catch (err) {
       error('Erreur lors de la clôture de la tournée: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
     } finally {
       setUpdating(false);
     }

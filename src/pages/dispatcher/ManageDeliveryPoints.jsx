@@ -108,7 +108,6 @@ const ManageDeliveryPoints = () => {
       await fetchAllDeliveryPoints();
     } catch (err) {
       error('Erreur lors du chargement des données: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
     } finally {
       setLoading(false);
     }
@@ -122,7 +121,6 @@ const ManageDeliveryPoints = () => {
       return response.data;
     } catch (err) {
       error('Erreur lors du chargement des points de livraison: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
       return [];
     }
   };
@@ -135,7 +133,6 @@ const ManageDeliveryPoints = () => {
       return response.data;
     } catch (err) {
       error('Erreur lors du chargement des points de livraison: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
       return [];
     }
   };
@@ -217,7 +214,6 @@ const ManageDeliveryPoints = () => {
       fetchData();
     } catch (err) {
       error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} du point de livraison: ` + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
     } finally {
       setSubmitting(false);
     }
@@ -252,7 +248,6 @@ const ManageDeliveryPoints = () => {
       fetchData();
     } catch (err) {
       error('Erreur lors de la suppression du point de livraison: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
     }
   };
 

@@ -80,7 +80,6 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
       }
     } catch (err) {
       error('Erreur lors du chargement des données: ' + (err.response?.data?.error || err.message));
-      console.error('Erreur:', err);
     } finally {
       setLoading(false);
     }

@@ -83,7 +83,6 @@ const ManageDispatchers = () => {
       setDispatchers(response.data);
     } catch (err) {
       error(getApiError(err, 'Erreur lors du chargement des répartiteurs'));
-      console.error('Erreur:', err);
     } finally {
       setLoading(false);
     }
@@ -133,7 +132,6 @@ const ManageDispatchers = () => {
       setOpenDialog(true);
     } catch (err) {
       error(getApiError(err, 'Erreur lors de la récupération des détails du répartiteur'));
-      console.error('Erreur:', err);
     }
   };
   
