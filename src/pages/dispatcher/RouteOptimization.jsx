@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Container, 
-  Typography, 
-  Box, 
-  Paper, 
-  Grid, 
-  FormControl, 
-  InputLabel, 
-  Select, 
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
   MenuItem,
   Button,
   Divider,
@@ -16,7 +16,9 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Chip
+  Chip,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import DirectionsIcon from '@mui/icons-material/Directions';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -25,8 +27,11 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import RouteIcon from '@mui/icons-material/Route';
 import TimerIcon from '@mui/icons-material/Timer';
 import MapIcon from '@mui/icons-material/Map';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import { useAlert } from '../../context/AlertContext';
+import { useNavigate } from 'react-router-dom';
+import StatusChip from '../../components/common/StatusChip';
 import RouteMap from '../../components/maps/RouteMap';
 import { getAllRoutes, optimizeRoute } from '../../api/routes';
 
@@ -39,6 +44,7 @@ const RouteOptimization = () => {
   const [loading, setLoading] = useState(true);
   
   const { success, error } = useAlert();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchRoutes();
@@ -110,9 +116,14 @@ const RouteOptimization = () => {
   
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Optimisation des tournées
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1 }}>
+        <Tooltip title="Retour au tableau de bord">
+          <IconButton onClick={() => navigate('/dispatcher/dashboard')}>
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+        <Typography variant="h4">Optimisation des tournées</Typography>
+      </Box>
       
       <Paper sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={3} alignItems="center">
@@ -251,14 +262,7 @@ const RouteOptimization = () => {
                       primary={point.clientName}
                       secondary={`${point.address.street}, ${point.address.city}`}
                     />
-                    <Chip 
-                      size="small" 
-                      label={point.deliveryStatus} 
-                      color={
-                        point.deliveryStatus === 'COMPLETED' ? 'success' :
-                        point.deliveryStatus === 'IN_PROGRESS' ? 'warning' :
-                        point.deliveryStatus === 'FAILED' ? 'error' : 'default'
-                      }
+                    <StatusChip status={point.deliveryStatus} type="delivery"
                     />
                   </ListItem>
                 ))}

@@ -112,15 +112,18 @@ const Header = () => {
           </Typography>
 
           {isAuthenticated ? (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <IconButton size="large" color="inherit" onClick={() => navigateTo(`/${currentUser?.role?.toLowerCase()}/notifications`)}>
                 <Badge badgeContent={unreadCount} color="error">
                   <Notifications />
                 </Badge>
               </IconButton>
 
-              <IconButton size="large" edge="end" onClick={handleMenuOpen} color="inherit">
+              <IconButton size="large" edge="end" onClick={handleMenuOpen} color="inherit" sx={{ gap: 1 }}>
                 <AccountCircle />
+                <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  {currentUser?.username}
+                </Typography>
               </IconButton>
 
               <Menu
@@ -130,8 +133,9 @@ const Header = () => {
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
               >
-                <MenuItem disabled>
-                  <Typography variant="body2">{currentUser?.role || 'Utilisateur'}</Typography>
+                <MenuItem disabled sx={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <Typography variant="body2" fontWeight="bold">{currentUser?.username}</Typography>
+                  <Typography variant="caption" color="text.secondary">{currentUser?.role}</Typography>
                 </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>

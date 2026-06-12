@@ -77,6 +77,10 @@ const Login = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
+            sx={{
+              '& input::-ms-reveal': { display: 'none' },
+              '& input::-ms-clear': { display: 'none' },
+            }}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">

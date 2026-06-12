@@ -1,11 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Box, Typography, Chip, Fab, CircularProgress } from '@mui/material';
+import { Box, Typography, Fab, CircularProgress } from '@mui/material';
+import StatusChip from '../common/StatusChip';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { calculateRoute } from '../../utils/geocoding';
-import { DRIVER_ICON, getStatusIcon } from '../../utils/mapIcons';
+import { DRIVER_ICON } from '../../utils/mapIcons';
+
+const STATUS_COLORS = {
+  PENDING: '#6b7280',
+  IN_PROGRESS: '#f97316',
+  COMPLETED: '#22c55e',
+  FAILED: '#ef4444'
+};
+
+const createNumberedIcon = (label, status = 'PENDING') => {
+  const color = STATUS_COLORS[status] || STATUS_COLORS.PENDING;
+  return L.divIcon({
+    className: '',
+    html: `
+      <div style="
+        width:30px;height:30px;border-radius:15px;
+        border:3px solid ${color};background:#fff;color:${color};
+        font-size:13px;font-weight:700;display:flex;align-items:center;
+        justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.25);
+      ">${label}</div>
+      <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;
+        border-top:8px solid ${color};margin:0 auto;transform:translateY(-2px);"></div>
+    `,
+    iconSize: [30, 36],
+    iconAnchor: [15, 34],
+    popupAnchor: [0, -32]
+  });
+};
 
 const MapControl = ({ positions, driverPosition, mapRef }) => {
   const map = useMap();
@@ -24,8 +52,8 @@ const MapControl = ({ positions, driverPosition, mapRef }) => {
     if (positions && positions.length > 0) {
       try {
         const bounds = L.latLngBounds(positions);
-        if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [48, 48] });
+        if (bounds.isValid() && map._loaded) {
+          map.fitBounds(bounds, { padding: [48, 48], animate: false });
         }
       } catch (_e) {
         // positions invalides
@@ -44,10 +72,10 @@ const RouteMap = ({ route, onRouteInfo }) => {
   const [calculatingRoute, setCalculatingRoute] = useState(false);
   const mapRef = React.useRef(null);
 
-  const allPositions = [
+  const allPositions = useMemo(() => [
     ...(driverPosition ? [driverPosition] : []),
     ...routePoints.map(p => p.position)
-  ];
+  ], [driverPosition, routePoints]);
 
   useEffect(() => {
     if (!route) return;
@@ -150,21 +178,13 @@ const RouteMap = ({ route, onRouteInfo }) => {
         )}
 
         {routePoints.map((point, index) => (
-          <Marker key={point.id} position={point.position} icon={getStatusIcon(point.status)}>
+          <Marker key={point.id} position={point.position} icon={createNumberedIcon(index + 1, point.status)}>
             <Popup>
               <Box sx={{ minWidth: 200 }}>
                 <Typography variant="subtitle1">{index + 1}. {point.clientName}</Typography>
                 <Typography variant="body2">{point.address}</Typography>
                 <Box sx={{ mt: 1, mb: 1 }}>
-                  <Chip
-                    size="small"
-                    label={point.status}
-                    color={
-                      point.status === 'COMPLETED' ? 'success' :
-                      point.status === 'IN_PROGRESS' ? 'warning' :
-                      point.status === 'FAILED' ? 'error' : 'default'
-                    }
-                  />
+                  <StatusChip status={point.status} type="delivery" />
                 </Box>
                 {point.time && (
                   <Typography variant="body2">

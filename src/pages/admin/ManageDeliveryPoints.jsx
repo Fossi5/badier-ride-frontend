@@ -35,8 +35,10 @@ import {
   LocationOn as LocationIcon,
   Close as CloseIcon,
   Phone as PhoneIcon,
-  Email as EmailIcon
+  Email as EmailIcon,
+  ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 
 // Import du composant DeliveryPointForm modifié
@@ -74,6 +76,7 @@ const ManageDeliveryPoints = () => {
 
   // Hooks et contextes
   const { success, error } = useAlert();
+  const navigate = useNavigate();
 
   // Charger les données au montage du composant
   useEffect(() => {
@@ -253,8 +256,13 @@ const ManageDeliveryPoints = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1 }}>
+        <Tooltip title="Retour au tableau de bord">
+          <IconButton onClick={() => navigate('/admin/dashboard')}>
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+        <Typography variant="h4" sx={{ flex: 1 }}>
           Gestion des points de livraison
         </Typography>
 

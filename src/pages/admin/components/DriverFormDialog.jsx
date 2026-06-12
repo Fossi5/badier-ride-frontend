@@ -122,36 +122,6 @@ const DriverFormDialog = ({
             disabled={loading}
           />
 
-          <Box sx={{ display: 'flex', mt: 2 }}>
-            <TextField
-              margin="normal"
-              fullWidth
-              id="latitude"
-              label="Latitude"
-              name="latitude"
-              value={formData.latitude}
-              onChange={onChange}
-              error={!!formErrors.latitude}
-              helperText={formErrors.latitude}
-              disabled={loading}
-              sx={{ mr: 1 }}
-            />
-
-            <TextField
-              margin="normal"
-              fullWidth
-              id="longitude"
-              label="Longitude"
-              name="longitude"
-              value={formData.longitude}
-              onChange={onChange}
-              error={!!formErrors.longitude}
-              helperText={formErrors.longitude}
-              disabled={loading}
-              sx={{ ml: 1 }}
-            />
-          </Box>
-
           <FormControlLabel
             control={
               <Switch

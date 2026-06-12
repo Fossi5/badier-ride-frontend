@@ -51,6 +51,7 @@ import { formatDate, formatAddress } from '../../utils/formatters';
 import { useAlert } from '../../context/AlertContext';
 import { exportRoutes } from '../../api/export';
 import { downloadFile } from '../../utils/downloadFile';
+import StatusChip from '../../components/common/StatusChip';
 
 const DispatcherDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -126,9 +127,11 @@ const DispatcherDashboard = () => {
             </span>
           </Tooltip>
           <Tooltip title="Rafraîchir">
-            <IconButton onClick={fetchData} disabled={loading}>
-              <RefreshIcon />
-            </IconButton>
+            <span>
+              <IconButton onClick={fetchData} disabled={loading}>
+                <RefreshIcon />
+              </IconButton>
+            </span>
           </Tooltip>
         </Box>
       </Box>
@@ -341,9 +344,9 @@ const DispatcherDashboard = () => {
                           primary={
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                               {route.name}
-                              <Chip size="small" label={route.status}
-                                color={route.status === 'COMPLETED' ? 'success' : route.status === 'IN_PROGRESS' ? 'primary' : route.status === 'CANCELLED' ? 'error' : 'default'}
-                                sx={{ ml: 1 }} />
+                              <Box component="span" sx={{ ml: 1 }}>
+                                <StatusChip status={route.status} />
+                              </Box>
                             </Box>
                           }
                           secondary={
@@ -406,11 +409,7 @@ const DispatcherDashboard = () => {
                           primary={point.clientName}
                           secondary={formatAddress(point.address)}
                         />
-                        <Chip
-                          size="small"
-                          label={point.deliveryStatus}
-                          color="default"
-                        />
+                        <StatusChip status={point.deliveryStatus} type="delivery" />
                       </ListItem>
                     ))}
                     {pendingDeliveries.length > 5 && (

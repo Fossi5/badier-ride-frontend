@@ -11,14 +11,15 @@ import {
   ListItem,
   ListItemText,
   ListItemAvatar,
-  ListItemSecondaryAction,
   Avatar,
   Button,
   IconButton,
   CircularProgress,
-  Card,
-  CardContent,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import {
   DirectionsCar as CarIcon,
@@ -26,12 +27,12 @@ import {
   LocationOn as LocationIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  NavigateNext as NavigateNextIcon,
   ArrowBack as ArrowBackIcon,
   Phone as PhoneIcon,
   LocalShipping as ShippingIcon,
   Notes as NotesIcon,
-  MyLocation as MyLocationIcon
+  MyLocation as MyLocationIcon,
+  PhotoCamera as PhotoCameraIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -55,6 +56,7 @@ const RouteDetails = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(null);
+  const [proofDialog, setProofDialog] = useState(null);
 
   const navigate = useNavigate();
   const { success, error, info } = useAlert();
@@ -223,7 +225,7 @@ const RouteDetails = () => {
     : 0;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Button
           variant="outlined"
@@ -240,7 +242,7 @@ const RouteDetails = () => {
 
       <Grid container spacing={3}>
         {/* Colonne de gauche: Informations et Liste des points */}
-        <Grid item xs={12} md={5}>
+        <Grid item xs={12} md={4}>
           {/* Carte des informations de la tournée */}
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h5" gutterBottom>
@@ -410,12 +412,17 @@ const RouteDetails = () => {
                       </Box>
                     </Box>
                     {(point.deliveryStatus === 'IN_PROGRESS' || point.deliveryStatus === 'COMPLETED') && (
-                      <Box sx={{ width: '100%', mt: 1, pl: 7 }}>
-                        <ProofUpload
-                          routeId={id}
-                          deliveryPointId={point.id}
-                          onValidated={fetchRouteDetails}
-                        />
+                      <Box sx={{ pl: 7, mt: 0.5 }}>
+                        <Tooltip title="Photo / code de confirmation">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<PhotoCameraIcon />}
+                            onClick={() => setProofDialog({ pointId: point.id, name: point.clientName })}
+                          >
+                            Preuve de livraison
+                          </Button>
+                        </Tooltip>
                       </Box>
                     )}
                   </ListItem>
@@ -435,7 +442,7 @@ const RouteDetails = () => {
         </Grid>
 
         {/* Colonne de droite: Carte */}
-        <Grid item xs={12} md={7}>
+        <Grid item xs={12} md={8}>
           <Paper sx={{ height: 'calc(100vh - 180px)', minHeight: 500, p: 0 }}>
             <Box sx={{ height: '100%', position: 'relative' }}>
               <DeliveryMap
@@ -480,6 +487,22 @@ const RouteDetails = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      <Dialog open={!!proofDialog} onClose={() => setProofDialog(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Preuve de livraison — {proofDialog?.name}</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          {proofDialog && (
+            <ProofUpload
+              routeId={id}
+              deliveryPointId={proofDialog.pointId}
+              onValidated={() => { setProofDialog(null); fetchRouteDetails(); }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setProofDialog(null)}>Fermer</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

@@ -10,8 +10,10 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 // Services API
 import {
@@ -25,6 +27,7 @@ import {
 // Utilitaires
 import { useAlert } from '../../context/AlertContext';
 import { isValidEmail, isValidPhone } from '../../utils/validators';
+import { getApiError } from '../../utils/apiError';
 
 // Sous-composants
 import DriverTable from './components/DriverTable';
@@ -61,6 +64,7 @@ const ManageDrivers = () => {
   const [driverToDelete, setDriverToDelete] = useState(null);
 
   const { success, error } = useAlert();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDrivers();
@@ -73,7 +77,7 @@ const ManageDrivers = () => {
       setDrivers(response.data.content);
       setTotalElements(response.data.totalElements);
     } catch (err) {
-      error('Erreur lors du chargement des chauffeurs');
+      error(getApiError(err, 'Erreur lors du chargement des chauffeurs'));
     } finally {
       setLoading(false);
     }
@@ -128,7 +132,7 @@ const ManageDrivers = () => {
 
       setOpenDialog(true);
     } catch (err) {
-      error('Erreur lors de la récupération des détails du chauffeur');
+      error(getApiError(err, 'Erreur lors de la récupération des détails du chauffeur'));
     }
   };
 
@@ -202,7 +206,8 @@ const ManageDrivers = () => {
       handleCloseDialog();
       fetchDrivers();
     } catch (err) {
-      error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} du chauffeur`);
+      const msg = err.response?.data?.error || err.response?.data?.message || `Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} du chauffeur`;
+      error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -228,22 +233,28 @@ const ManageDrivers = () => {
       handleCloseDeleteDialog();
       fetchDrivers();
     } catch (err) {
-      error('Erreur lors de la suppression du chauffeur');
+      error(getApiError(err, 'Erreur lors de la suppression du chauffeur'));
     }
   };
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1 }}>
+        <Tooltip title="Retour au tableau de bord">
+          <IconButton onClick={() => navigate('/admin/dashboard')}>
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+        <Typography variant="h4" sx={{ flex: 1 }}>
           Gestion des chauffeurs
         </Typography>
-
         <Box>
           <Tooltip title="Rafraîchir">
-            <IconButton onClick={fetchDrivers} disabled={loading} sx={{ mr: 1 }}>
-              <RefreshIcon />
-            </IconButton>
+            <span>
+              <IconButton onClick={fetchDrivers} disabled={loading} sx={{ mr: 1 }}>
+                <RefreshIcon />
+              </IconButton>
+            </span>
           </Tooltip>
 
           <Button

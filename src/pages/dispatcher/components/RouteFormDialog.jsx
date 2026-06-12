@@ -1,4 +1,3 @@
-// src/pages/dispatcher/components/RouteFormDialog.jsx
 import React from 'react';
 import {
   Box,
@@ -16,7 +15,9 @@ import {
   Grid,
   CircularProgress,
   Divider,
-  Chip
+  Chip,
+  Checkbox,
+  ListItemText as MuiListItemText
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -38,13 +39,11 @@ const RouteFormDialog = ({
   onFormChange,
   onDateChange
 }) => {
+  const isAdmin = currentUserRole === 'ADMIN';
+  const isDispatcher = currentUserRole === 'DISPATCHER';
+
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-    >
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         {dialogMode === 'create' ? 'Nouvelle tournée' : 'Modifier la tournée'}
       </DialogTitle>
@@ -58,7 +57,6 @@ const RouteFormDialog = ({
               <TextField
                 required
                 fullWidth
-                id="name"
                 label="Nom de la tournée"
                 name="name"
                 value={formData.name}
@@ -71,10 +69,8 @@ const RouteFormDialog = ({
 
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required error={!!formErrors.driverId}>
-                <InputLabel id="driver-label">Chauffeur</InputLabel>
+                <InputLabel>Chauffeur</InputLabel>
                 <Select
-                  labelId="driver-label"
-                  id="driverId"
                   name="driverId"
                   value={formData.driverId}
                   onChange={onFormChange}
@@ -83,52 +79,51 @@ const RouteFormDialog = ({
                 >
                   {drivers.map((driver) => (
                     <MenuItem key={driver.id} value={driver.id}>
-                      {driver.username}
-                      {driver.vehicleType && ` - ${driver.vehicleType}`}
+                      {driver.username}{driver.vehicleType ? ` — ${driver.vehicleType}` : ''}
                     </MenuItem>
                   ))}
                 </Select>
                 {formErrors.driverId && (
-                  <Typography variant="caption" color="error">
-                    {formErrors.driverId}
-                  </Typography>
+                  <Typography variant="caption" color="error">{formErrors.driverId}</Typography>
                 )}
               </FormControl>
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required error={!!formErrors.dispatcherId}>
-                <InputLabel id="dispatcher-label">Répartiteur</InputLabel>
+              <FormControl
+                fullWidth
+                required={isDispatcher}
+                error={!!formErrors.dispatcherId}
+              >
+                <InputLabel>
+                  Répartiteur{isAdmin ? ' (optionnel)' : ''}
+                </InputLabel>
                 <Select
-                  labelId="dispatcher-label"
-                  id="dispatcherId"
                   name="dispatcherId"
                   value={formData.dispatcherId}
                   onChange={onFormChange}
-                  label="Répartiteur"
-                  disabled={submitting || currentUserRole === 'DISPATCHER' || authErrors.dispatchersError}
+                  label={`Répartiteur${isAdmin ? ' (optionnel)' : ''}`}
+                  disabled={submitting || isDispatcher || authErrors.dispatchersError}
                 >
+                  {isAdmin && (
+                    <MenuItem value=""><em>Aucun</em></MenuItem>
+                  )}
                   {dispatchers.map((dispatcher) => (
                     <MenuItem key={dispatcher.id} value={dispatcher.id}>
-                      {dispatcher.username}
-                      {dispatcher.department && ` - ${dispatcher.department}`}
+                      {dispatcher.username}{dispatcher.department ? ` — ${dispatcher.department}` : ''}
                     </MenuItem>
                   ))}
                 </Select>
                 {formErrors.dispatcherId && (
-                  <Typography variant="caption" color="error">
-                    {formErrors.dispatcherId}
-                  </Typography>
+                  <Typography variant="caption" color="error">{formErrors.dispatcherId}</Typography>
                 )}
               </FormControl>
             </Grid>
 
             <Grid item xs={12}>
               <FormControl fullWidth required error={!!formErrors.deliveryPointIds}>
-                <InputLabel id="delivery-points-label">Points de livraison</InputLabel>
+                <InputLabel>Points de livraison</InputLabel>
                 <Select
-                  labelId="delivery-points-label"
-                  id="deliveryPointIds"
                   name="deliveryPointIds"
                   multiple
                   value={formData.deliveryPointIds}
@@ -138,13 +133,9 @@ const RouteFormDialog = ({
                   renderValue={(selected) => (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selected.map((value) => {
-                        const deliveryPoint = deliveryPoints.find(dp => dp.id === value);
+                        const dp = deliveryPoints.find(d => d.id === value);
                         return (
-                          <Chip
-                            key={value}
-                            label={deliveryPoint ? deliveryPoint.clientName : value}
-                            size="small"
-                          />
+                          <Chip key={value} label={dp ? dp.clientName : value} size="small" />
                         );
                       })}
                     </Box>
@@ -154,14 +145,16 @@ const RouteFormDialog = ({
                     .filter(dp => dp.deliveryStatus !== 'COMPLETED' && dp.deliveryStatus !== 'FAILED')
                     .map((dp) => (
                       <MenuItem key={dp.id} value={dp.id}>
-                        {dp.clientName} - {dp.address?.street}, {dp.address?.city}
+                        <Checkbox checked={formData.deliveryPointIds.includes(dp.id)} size="small" />
+                        <MuiListItemText
+                          primary={dp.clientName}
+                          secondary={`${dp.address?.street}, ${dp.address?.city}`}
+                        />
                       </MenuItem>
                     ))}
                 </Select>
                 {formErrors.deliveryPointIds && (
-                  <Typography variant="caption" color="error">
-                    {formErrors.deliveryPointIds}
-                  </Typography>
+                  <Typography variant="caption" color="error">{formErrors.deliveryPointIds}</Typography>
                 )}
               </FormControl>
             </Grid>
@@ -205,10 +198,8 @@ const RouteFormDialog = ({
 
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel id="status-label">Statut</InputLabel>
+                <InputLabel>Statut</InputLabel>
                 <Select
-                  labelId="status-label"
-                  id="status"
                   name="status"
                   value={formData.status}
                   onChange={onFormChange}
@@ -226,13 +217,12 @@ const RouteFormDialog = ({
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                id="notes"
                 label="Notes"
                 name="notes"
                 value={formData.notes}
                 onChange={onFormChange}
                 multiline
-                rows={4}
+                rows={3}
                 disabled={submitting}
               />
             </Grid>
@@ -241,9 +231,7 @@ const RouteFormDialog = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
-          Annuler
-        </Button>
+        <Button onClick={onClose} disabled={submitting}>Annuler</Button>
         <Button
           onClick={onSubmit}
           variant="contained"

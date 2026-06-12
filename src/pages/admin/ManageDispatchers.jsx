@@ -21,8 +21,10 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import DeleteDispatcherDialog from './components/DeleteDispatcherDialog';
 
 // Importation des services API
@@ -37,6 +39,7 @@ import {
 // Importation des utilitaires
 import { useAlert } from '../../context/AlertContext';
 import { isValidEmail } from '../../utils/validators';
+import { getApiError } from '../../utils/apiError';
 import DispatcherFormDialog from './components/DispatcherFormDialog';
 
 const ManageDispatchers = () => {
@@ -65,6 +68,7 @@ const ManageDispatchers = () => {
   
   // Notifications
   const { success, error } = useAlert();
+  const navigate = useNavigate();
   
   // Charger les données au montage du composant
   useEffect(() => {
@@ -78,7 +82,7 @@ const ManageDispatchers = () => {
       const response = await getAllDispatchers();
       setDispatchers(response.data);
     } catch (err) {
-      error('Erreur lors du chargement des répartiteurs');
+      error(getApiError(err, 'Erreur lors du chargement des répartiteurs'));
       console.error('Erreur:', err);
     } finally {
       setLoading(false);
@@ -128,7 +132,7 @@ const ManageDispatchers = () => {
       
       setOpenDialog(true);
     } catch (err) {
-      error('Erreur lors de la récupération des détails du répartiteur');
+      error(getApiError(err, 'Erreur lors de la récupération des détails du répartiteur'));
       console.error('Erreur:', err);
     }
   };
@@ -209,8 +213,7 @@ const ManageDispatchers = () => {
       handleCloseDialog();
       fetchDispatchers();
     } catch (err) {
-      error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} du répartiteur`);
-      console.error('Erreur:', err);
+      error(getApiError(err, `Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} du répartiteur`));
     } finally {
       setSubmitting(false);
     }
@@ -240,23 +243,28 @@ const ManageDispatchers = () => {
       handleCloseDeleteDialog();
       fetchDispatchers();
     } catch (err) {
-      error('Erreur lors de la suppression du répartiteur');
-      console.error('Erreur:', err);
+      error(getApiError(err, 'Erreur lors de la suppression du répartiteur'));
     }
   };
   
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1 }}>
+        <Tooltip title="Retour au tableau de bord">
+          <IconButton onClick={() => navigate('/admin/dashboard')}>
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+        <Typography variant="h4" sx={{ flex: 1 }}>
           Gestion des répartiteurs
         </Typography>
-        
         <Box>
           <Tooltip title="Rafraîchir">
-            <IconButton onClick={fetchDispatchers} disabled={loading} sx={{ mr: 1 }}>
-              <RefreshIcon />
-            </IconButton>
+            <span>
+              <IconButton onClick={fetchDispatchers} disabled={loading} sx={{ mr: 1 }}>
+                <RefreshIcon />
+              </IconButton>
+            </span>
           </Tooltip>
           
           <Button

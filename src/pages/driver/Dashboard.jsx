@@ -1,4 +1,3 @@
-// src/pages/driver/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -10,7 +9,6 @@ import {
   ListItem,
   ListItemText,
   Divider,
-  Chip,
   Button,
   CircularProgress,
   Switch,
@@ -18,12 +16,16 @@ import {
   Card,
   CardContent,
   IconButton,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import MyLocationIcon from '@mui/icons-material/MyLocation';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import { format } from 'date-fns';
 
 import { getDriverRoutes, updateRouteStatus } from '../../api/routes';
@@ -31,6 +33,8 @@ import { updateDriverAvailability, updateDriverLocation, getDriverProfile } from
 import { updateDeliveryPointStatus } from '../../api/deliveryPoints';
 import { useAlert } from '../../context/AlertContext';
 import DeliveryMap from '../../components/maps/DeliveryMap';
+import StatusChip from '../../components/common/StatusChip';
+import ProofUpload from '../../components/delivery/ProofUpload';
 
 const DriverDashboard = () => {
   const [routes, setRoutes] = useState([]);
@@ -38,59 +42,39 @@ const DriverDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [proofDialog, setProofDialog] = useState(null);
 
   const { success, error } = useAlert();
 
-  // Charger les données au montage du composant
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Récupérer les données du chauffeur et ses tournées
   const fetchData = async () => {
     try {
       setLoading(true);
-
-      // Récupérer profil chauffeur
       const profileResponse = await getDriverProfile();
       setIsAvailable(profileResponse.data.isAvailable);
 
-      // Récupérer ses tournées
       const routesResponse = await getDriverRoutes();
       setRoutes(routesResponse.data);
 
-      // Définir la tournée active (si existe)
       const inProgressRoute = routesResponse.data.find(r => r.status === 'IN_PROGRESS');
       const plannedRoute = routesResponse.data.find(r => r.status === 'PLANNED');
-
-      if (inProgressRoute) {
-        setActiveRoute(inProgressRoute);
-      } else if (plannedRoute) {
-        setActiveRoute(plannedRoute);
-      }
-
-      setLoading(false);
+      setActiveRoute(inProgressRoute ?? plannedRoute ?? null);
     } catch (err) {
       error('Erreur lors du chargement des données');
+    } finally {
       setLoading(false);
     }
   };
 
-  // Mettre à jour le statut d'un point de livraison
   const handleStatusUpdate = async (pointId, newStatus) => {
-    if (!activeRoute) {
-      error('Aucune tournée active');
-      return;
-    }
-
+    if (!activeRoute) return error('Aucune tournée active');
     try {
       setUpdating(true);
-      // Le statut est maintenant par tournée, on passe le routeId
       await updateDeliveryPointStatus(activeRoute.id, pointId, newStatus);
-
-      success(`Point de livraison mis à jour: ${newStatus}`);
-
-      // Recharger les données
+      success(`Point mis à jour : ${newStatus}`);
       await fetchData();
     } catch (err) {
       error('Erreur lors de la mise à jour du statut');
@@ -99,135 +83,75 @@ const DriverDashboard = () => {
     }
   };
 
-  // Démarrer une tournée
   const handleStartRoute = async (routeId) => {
     try {
       setUpdating(true);
-      // Mettre à jour le statut de la route
       await updateRouteStatus(routeId, 'IN_PROGRESS');
-
-      success('Tournée démarrée avec succès');
-
-      // Recharger les données
+      success('Tournée démarrée');
       await fetchData();
-    } catch (err) {
+    } catch {
       error('Erreur lors du démarrage de la tournée');
     } finally {
       setUpdating(false);
     }
   };
 
-  // Terminer une tournée
   const handleCompleteRoute = async (routeId) => {
     try {
       setUpdating(true);
-      // Mettre à jour le statut de la route
       await updateRouteStatus(routeId, 'COMPLETED');
-
-      success('Tournée terminée avec succès');
-
-      // Recharger les données
+      success('Tournée terminée');
       await fetchData();
-    } catch (err) {
+    } catch {
       error('Erreur lors de la clôture de la tournée');
     } finally {
       setUpdating(false);
     }
   };
 
-  // Mettre à jour la position du chauffeur
   const handleLocationUpdate = async (position) => {
     try {
       await updateDriverLocation(position[0], position[1]);
-    } catch (err) {
-      // Échec silencieux de la mise à jour de position (non critique pour l'utilisateur)
+    } catch {
+      // mise à jour silencieuse
     }
   };
 
-  // Mettre à jour la disponibilité du chauffeur
   const handleAvailabilityToggle = async (event) => {
     const newAvailability = event.target.checked;
-
     try {
       setUpdating(true);
       await updateDriverAvailability(newAvailability);
       setIsAvailable(newAvailability);
-      success(`Statut mis à jour: ${newAvailability ? 'Disponible' : 'Indisponible'}`);
-    } catch (err) {
+      success(`Statut : ${newAvailability ? 'Disponible' : 'Indisponible'}`);
+    } catch {
       error('Erreur lors de la mise à jour de la disponibilité');
-      // Remettre l'ancien état en cas d'erreur
       setIsAvailable(!newAvailability);
     } finally {
       setUpdating(false);
     }
   };
 
-  // Recenter la carte sur la position du chauffeur
-  const handleRecenter = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          handleLocationUpdate([latitude, longitude]);
-        },
-        (err) => {
-          error('Impossible d\'accéder à votre localisation: ' + err.message);
-        }
-      );
-    } else {
-      error('La géolocalisation n\'est pas prise en charge par votre navigateur');
-    }
-  };
-
-  // Calculer les statistiques de la journée
   const getTodayStats = () => {
-    if (!routes || routes.length === 0) {
-      return {
-        totalDeliveries: 0,
-        completed: 0,
-        pending: 0,
-        failed: 0
-      };
-    }
-
-    // Filtrer les tournées d'aujourd'hui
+    if (!routes?.length) return { totalDeliveries: 0, completed: 0, pending: 0, failed: 0 };
     const today = new Date().toISOString().split('T')[0];
-    const todayRoutes = routes.filter(route => {
-      return route.startTime && route.startTime.startsWith(today);
-    });
-
-    // Compter les points de livraison par statut
-    let totalDeliveries = 0;
-    let completed = 0;
-    let pending = 0;
-    let failed = 0;
-
+    const todayRoutes = routes.filter(r => r.startTime?.startsWith(today));
+    let totalDeliveries = 0, completed = 0, pending = 0, failed = 0;
     todayRoutes.forEach(route => {
       route.deliveryPoints.forEach(point => {
         totalDeliveries++;
-
-        if (point.deliveryStatus === 'COMPLETED') {
-          completed++;
-        } else if (point.deliveryStatus === 'FAILED') {
-          failed++;
-        } else {
-          pending++;
-        }
+        if (point.deliveryStatus === 'COMPLETED') completed++;
+        else if (point.deliveryStatus === 'FAILED') failed++;
+        else pending++;
       });
     });
-
-    return {
-      totalDeliveries,
-      completed,
-      pending,
-      failed
-    };
+    return { totalDeliveries, completed, pending, failed };
   };
 
   const stats = getTodayStats();
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom>
         Tableau de bord chauffeur
       </Typography>
@@ -238,7 +162,6 @@ const DriverDashboard = () => {
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {/* Carte des statuts et actions */}
           <Grid item xs={12} md={4}>
             <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -251,7 +174,7 @@ const DriverDashboard = () => {
                       disabled={updating}
                     />
                   }
-                  label={isAvailable ? "Disponible" : "Indisponible"}
+                  label={isAvailable ? 'Disponible' : 'Indisponible'}
                 />
               </Box>
 
@@ -262,86 +185,45 @@ const DriverDashboard = () => {
               </Typography>
 
               <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={6}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary">
-                        Livraisons
-                      </Typography>
-                      <Typography variant="h5">
-                        {stats.completed} / {stats.totalDeliveries}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={6}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary">
-                        En attente
-                      </Typography>
-                      <Typography variant="h5">
-                        {stats.pending}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={6}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary">
-                        Échecs
-                      </Typography>
-                      <Typography variant="h5">
-                        {stats.failed}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={6}>
-                  <Card variant="outlined">
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary">
-                        Tournées
-                      </Typography>
-                      <Typography variant="h5">
-                        {routes.length}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                {[
+                  { label: 'Livraisons', value: `${stats.completed} / ${stats.totalDeliveries}` },
+                  { label: 'En attente', value: stats.pending },
+                  { label: 'Échecs', value: stats.failed },
+                  { label: 'Tournées', value: routes.length },
+                ].map(({ label, value }) => (
+                  <Grid item xs={6} key={label}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                        <Typography variant="body2" color="text.secondary">{label}</Typography>
+                        <Typography variant="h5">{value}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
               </Grid>
 
-              {activeRoute && (
+              {activeRoute ? (
                 <>
                   <Typography variant="subtitle1" gutterBottom>
                     Tournée active
                   </Typography>
 
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body1">
-                      {activeRoute.name}
-                    </Typography>
+                    <Typography variant="body1" fontWeight="medium">{activeRoute.name}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {activeRoute.startTime ? format(new Date(activeRoute.startTime), 'dd/MM/yyyy HH:mm') : 'Non planifiée'}
+                      {activeRoute.startTime
+                        ? format(new Date(activeRoute.startTime), 'dd/MM/yyyy HH:mm')
+                        : 'Non planifiée'}
                     </Typography>
-                    <Chip
-                      size="small"
-                      label={activeRoute.status}
-                      color={
-                        activeRoute.status === 'COMPLETED' ? 'success' :
-                          activeRoute.status === 'IN_PROGRESS' ? 'primary' :
-                            activeRoute.status === 'CANCELLED' ? 'error' : 'default'
-                      }
-                      sx={{ mt: 1 }}
-                    />
+                    <Box sx={{ mt: 1 }}>
+                      <StatusChip status={activeRoute.status} />
+                    </Box>
                   </Box>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Box sx={{ mb: 2 }}>
                     {activeRoute.status === 'PLANNED' && (
                       <Button
                         variant="contained"
-                        color="primary"
                         startIcon={<PlayArrowIcon />}
                         onClick={() => handleStartRoute(activeRoute.id)}
                         disabled={updating}
@@ -350,7 +232,6 @@ const DriverDashboard = () => {
                         Démarrer
                       </Button>
                     )}
-
                     {activeRoute.status === 'IN_PROGRESS' && (
                       <Button
                         variant="contained"
@@ -374,57 +255,55 @@ const DriverDashboard = () => {
                       <React.Fragment key={point.id}>
                         <ListItem
                           secondaryAction={
-                            <>
-                              {point.deliveryStatus !== 'COMPLETED' && point.deliveryStatus !== 'FAILED' && (
-                                <>
-                                  <Tooltip title="Marquer comme livré">
-                                    <IconButton
-                                      edge="end"
-                                      aria-label="complete"
-                                      size="small"
-                                      color="success"
-                                      onClick={() => handleStatusUpdate(point.id, 'COMPLETED')}
-                                      disabled={updating}
-                                    >
-                                      <CheckCircleIcon />
-                                    </IconButton>
-                                  </Tooltip>
-                                  <Tooltip title="Marquer comme échec">
-                                    <IconButton
-                                      edge="end"
-                                      aria-label="fail"
-                                      size="small"
-                                      color="error"
-                                      onClick={() => handleStatusUpdate(point.id, 'FAILED')}
-                                      disabled={updating}
-                                      sx={{ ml: 1 }}
-                                    >
-                                      <CancelIcon />
-                                    </IconButton>
-                                  </Tooltip>
-                                </>
-                              )}
-                            </>
+                            point.deliveryStatus !== 'COMPLETED' && point.deliveryStatus !== 'FAILED' ? (
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Tooltip title="Livré">
+                                  <IconButton
+                                    size="small"
+                                    color="success"
+                                    onClick={() => handleStatusUpdate(point.id, 'COMPLETED')}
+                                    disabled={updating}
+                                  >
+                                    <CheckCircleIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Échec">
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => handleStatusUpdate(point.id, 'FAILED')}
+                                    disabled={updating}
+                                  >
+                                    <CancelIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            ) : null
                           }
                         >
                           <ListItemText
+                            secondaryTypographyProps={{ component: 'div' }}
                             primary={`${index + 1}. ${point.clientName}`}
                             secondary={
-                              <>
-                                <Typography variant="body2" component="span">
+                              <Box>
+                                <Typography variant="body2" component="span" display="block">
                                   {point.address.street}, {point.address.city}
                                 </Typography>
-                                <Chip
-                                  size="small"
-                                  label={point.deliveryStatus}
-                                  color={
-                                    point.deliveryStatus === 'COMPLETED' ? 'success' :
-                                      point.deliveryStatus === 'IN_PROGRESS' ? 'warning' :
-                                        point.deliveryStatus === 'FAILED' ? 'error' : 'default'
-                                  }
-                                  sx={{ ml: 1 }}
-                                />
-                              </>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                  <StatusChip status={point.deliveryStatus} type="delivery" size="small" />
+                                  {(point.deliveryStatus === 'IN_PROGRESS' || point.deliveryStatus === 'COMPLETED') && (
+                                    <Tooltip title="Photo / code de confirmation">
+                                      <IconButton
+                                        size="small"
+                                        color="primary"
+                                        onClick={() => setProofDialog({ routeId: activeRoute.id, pointId: point.id, name: point.clientName })}
+                                      >
+                                        <PhotoCameraIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                </Box>
+                              </Box>
                             }
                           />
                         </ListItem>
@@ -433,9 +312,7 @@ const DriverDashboard = () => {
                     ))}
                   </List>
                 </>
-              )}
-
-              {!activeRoute && (
+              ) : (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                   Aucune tournée active pour aujourd'hui.
                 </Typography>
@@ -443,39 +320,33 @@ const DriverDashboard = () => {
             </Paper>
           </Grid>
 
-          {/* Carte de livraison */}
           <Grid item xs={12} md={8}>
             <Paper sx={{ p: 0, overflow: 'hidden', height: 'calc(100vh - 180px)', minHeight: 500 }}>
-              <Box sx={{ height: '100%', position: 'relative' }}>
-                <DeliveryMap
-                  route={activeRoute}
-                  onStatusUpdate={handleStatusUpdate}
-                  onLocationUpdate={handleLocationUpdate}
-                  loading={updating}
-                />
-
-                <Tooltip title="Recentrer sur ma position">
-                  <IconButton
-                    color="primary"
-                    size="large"
-                    sx={{
-                      position: 'absolute',
-                      bottom: 16,
-                      right: 16,
-                      bgcolor: 'white',
-                      boxShadow: 3,
-                      '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.9)' }
-                    }}
-                    onClick={handleRecenter}
-                  >
-                    <MyLocationIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
+              <DeliveryMap
+                route={activeRoute}
+                onStatusUpdate={handleStatusUpdate}
+                onLocationUpdate={handleLocationUpdate}
+                loading={updating}
+              />
             </Paper>
           </Grid>
         </Grid>
       )}
+      <Dialog open={!!proofDialog} onClose={() => setProofDialog(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Preuve de livraison — {proofDialog?.name}</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          {proofDialog && (
+            <ProofUpload
+              routeId={proofDialog.routeId}
+              deliveryPointId={proofDialog.pointId}
+              onValidated={() => { setProofDialog(null); fetchData(); }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setProofDialog(null)}>Fermer</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

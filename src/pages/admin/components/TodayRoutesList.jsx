@@ -1,17 +1,9 @@
 // src/pages/admin/components/TodayRoutesList.jsx
 import React from 'react';
 import {
-  Paper,
-  Typography,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  IconButton,
-  CircularProgress,
-  Box
+  Paper, Typography, Divider, List, ListItem,
+  ListItemText, ListItemAvatar, Avatar, IconButton,
+  CircularProgress, Box
 } from '@mui/material';
 import {
   Timeline as TimelineIcon,
@@ -20,6 +12,7 @@ import {
   Warning as WarningIcon,
   Report as ReportIcon
 } from '@mui/icons-material';
+import StatusChip from '../../../components/common/StatusChip';
 import { formatDate } from '../../../utils/formatters';
 
 /**
@@ -73,11 +66,12 @@ const TodayRoutesList = ({ routes = [], loading }) => {
                 primary={route.name}
                 secondary={
                   <>
-                    <Typography component="span" variant="body2">
-                      Chauffeur: {route.driver.username} •
-                      Points: {route.deliveryPoints.length} •
-                      Statut: {route.status}
-                    </Typography>
+                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography component="span" variant="body2">
+                        Chauffeur : {route.driver.username} • {route.deliveryPoints.length} points
+                      </Typography>
+                      <StatusChip status={route.status} />
+                    </Box>
                     <br />
                     <Typography component="span" variant="body2" color="textSecondary">
                       {route.startTime && formatDate(route.startTime, 'datetime')}

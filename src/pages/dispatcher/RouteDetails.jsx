@@ -36,6 +36,7 @@ import { format } from 'date-fns';
 // Import des composants
 import RouteAddressesDialog from '../../components/routes/RouteAddressesDialog';
 import RouteOrderingDialog from '../../components/routes/RouteOrderingDialog';
+import StatusChip from '../../components/common/StatusChip';
 
 const RouteDetails = () => {
   const { id } = useParams();
@@ -184,16 +185,9 @@ const RouteDetails = () => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Typography variant="h5" gutterBottom>
             {route.name}
-            <Chip
-              sx={{ ml: 2 }}
-              size="small"
-              label={route.status}
-              color={
-                route.status === 'COMPLETED' ? 'success' :
-                route.status === 'IN_PROGRESS' ? 'primary' :
-                route.status === 'CANCELLED' ? 'error' : 'default'
-              }
-            />
+            <Box component="span" sx={{ ml: 2 }}>
+              <StatusChip status={route.status} />
+            </Box>
           </Typography>
           <Box>
             <Tooltip title="Modifier la tournée">
@@ -202,9 +196,11 @@ const RouteDetails = () => {
               </IconButton>
             </Tooltip>
             <Tooltip title="Optimiser la tournée">
-              <IconButton onClick={handleOptimizeRoute} disabled={route.status === 'COMPLETED' || route.status === 'CANCELLED'}>
-                <MapIcon />
-              </IconButton>
+              <span>
+                <IconButton onClick={handleOptimizeRoute} disabled={route.status === 'COMPLETED' || route.status === 'CANCELLED'}>
+                  <MapIcon />
+                </IconButton>
+              </span>
             </Tooltip>
           </Box>
         </Box>

@@ -1,4 +1,3 @@
-// src/pages/dispatcher/components/RouteTable.jsx
 import React from 'react';
 import {
   Box,
@@ -38,6 +37,23 @@ const RouteTable = ({
   onUpdateStatus,
   canEditRoute
 }) => {
+  const getOptimizeTooltip = (route) => {
+    if (route.status === 'COMPLETED') return 'Tournée terminée — optimisation impossible';
+    if (route.status === 'CANCELLED') return 'Tournée annulée — optimisation impossible';
+    return 'Optimiser l\'ordre des points';
+  };
+
+  const getDeleteTooltip = (route) => {
+    if (!canEditRoute(route)) return 'Vous n\'êtes pas autorisé à modifier cette tournée';
+    if (route.status === 'IN_PROGRESS') return 'Tournée en cours — suppression impossible';
+    return 'Supprimer la tournée';
+  };
+
+  const getEditTooltip = (route) => {
+    if (!canEditRoute(route)) return 'Vous n\'êtes pas autorisé à modifier cette tournée';
+    return 'Modifier la tournée';
+  };
+
   return (
     <Paper sx={{ width: '100%', overflow: 'hidden' }}>
       <TableContainer sx={{ maxHeight: 600 }}>
@@ -65,83 +81,83 @@ const RouteTable = ({
             </TableHead>
             <TableBody>
               {routes.map((route) => (
-                  <TableRow key={route.id} hover>
-                    <TableCell>{route.id}</TableCell>
-                    <TableCell>{route.name}</TableCell>
-                    <TableCell>{route.driver?.username || 'Non assigné'}</TableCell>
-                    <TableCell>{route.dispatcher?.username || 'Non assigné'}</TableCell>
-                    <TableCell>
-                      <StatusChip status={route.status} />
-                    </TableCell>
-                    <TableCell>{route.deliveryPoints?.length || 0}</TableCell>
-                    <TableCell>
-                      {route.startTime ? format(new Date(route.startTime), 'dd/MM/yyyy HH:mm') : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex' }}>
-                        <Tooltip title="Modifier">
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => onEdit(route)}
-                              disabled={!canEditRoute(route)}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </span>
+                <TableRow key={route.id} hover>
+                  <TableCell>{route.id}</TableCell>
+                  <TableCell>{route.name}</TableCell>
+                  <TableCell>{route.driver?.username || '—'}</TableCell>
+                  <TableCell>{route.dispatcher?.username || '—'}</TableCell>
+                  <TableCell>
+                    <StatusChip status={route.status} />
+                  </TableCell>
+                  <TableCell>{route.deliveryPoints?.length || 0}</TableCell>
+                  <TableCell>
+                    {route.startTime ? format(new Date(route.startTime), 'dd/MM/yyyy HH:mm') : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex' }}>
+                      <Tooltip title={getEditTooltip(route)}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => onEdit(route)}
+                            disabled={!canEditRoute(route)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+
+                      <Tooltip title={getDeleteTooltip(route)}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => onDelete(route)}
+                            disabled={!canEditRoute(route) || route.status === 'IN_PROGRESS'}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+
+                      <Tooltip title={getOptimizeTooltip(route)}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => onOptimize(route.id)}
+                            disabled={route.status === 'COMPLETED' || route.status === 'CANCELLED'}
+                          >
+                            <MapIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+
+                      {canEditRoute(route) && route.status === 'PLANNED' && (
+                        <Tooltip title="Démarrer la tournée">
+                          <IconButton
+                            size="small"
+                            onClick={() => onUpdateStatus(route.id, 'IN_PROGRESS')}
+                            color="primary"
+                          >
+                            <RouteIcon fontSize="small" />
+                          </IconButton>
                         </Tooltip>
+                      )}
 
-                        <Tooltip title="Supprimer">
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => onDelete(route)}
-                              disabled={!canEditRoute(route) || route.status === 'IN_PROGRESS'}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </span>
+                      {canEditRoute(route) && route.status === 'IN_PROGRESS' && (
+                        <Tooltip title="Marquer comme terminée">
+                          <IconButton
+                            size="small"
+                            onClick={() => onUpdateStatus(route.id, 'COMPLETED')}
+                            color="success"
+                          >
+                            <RouteIcon fontSize="small" />
+                          </IconButton>
                         </Tooltip>
-
-                        <Tooltip title="Optimiser">
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => onOptimize(route.id)}
-                              disabled={route.status === 'COMPLETED' || route.status === 'CANCELLED'}
-                            >
-                              <MapIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-
-                        {canEditRoute(route) && route.status === 'PLANNED' && (
-                          <Tooltip title="Démarrer">
-                            <IconButton
-                              size="small"
-                              onClick={() => onUpdateStatus(route.id, 'IN_PROGRESS')}
-                              color="primary"
-                            >
-                              <RouteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-
-                        {canEditRoute(route) && route.status === 'IN_PROGRESS' && (
-                          <Tooltip title="Terminer">
-                            <IconButton
-                              size="small"
-                              onClick={() => onUpdateStatus(route.id, 'COMPLETED')}
-                              color="success"
-                            >
-                              <RouteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      )}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         )}
@@ -155,7 +171,7 @@ const RouteTable = ({
         page={page}
         onPageChange={onPageChange}
         onRowsPerPageChange={onRowsPerPageChange}
-        labelRowsPerPage="Lignes par page:"
+        labelRowsPerPage="Lignes par page :"
         labelDisplayedRows={({ from, to, count }) => `${from}-${to} sur ${count}`}
       />
     </Paper>

@@ -36,7 +36,8 @@ import {
   LocationOn as LocationIcon,
   Close as CloseIcon,
   Phone as PhoneIcon,
-  Email as EmailIcon
+  Email as EmailIcon,
+  ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 
@@ -264,16 +265,22 @@ const ManageDeliveryPoints = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1 }}>
+        <Tooltip title="Retour au tableau de bord">
+          <IconButton onClick={() => navigate('/dispatcher/dashboard')}>
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+        <Typography variant="h4" sx={{ flex: 1 }}>
           Gestion des points de livraison
         </Typography>
-
         <Box>
           <Tooltip title="Rafraîchir">
-            <IconButton onClick={fetchData} disabled={loading} sx={{ mr: 1 }}>
-              <RefreshIcon />
-            </IconButton>
+            <span>
+              <IconButton onClick={fetchData} disabled={loading} sx={{ mr: 1 }}>
+                <RefreshIcon />
+              </IconButton>
+            </span>
           </Tooltip>
 
           <Button

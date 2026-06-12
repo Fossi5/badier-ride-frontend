@@ -70,16 +70,18 @@ const RecentDeliveriesList = ({ deliveries = [], loading }) => {
               </ListItemAvatar>
               <ListItemText
                 primary={point.clientName}
+                secondaryTypographyProps={{ component: 'div' }}
                 secondary={
                   <>
                     <Typography component="span" variant="body2">
                       {point.address.street}, {point.address.postalCode} {point.address.city}
                     </Typography>
-                    <br />
-                    <Typography component="span" variant="body2" color="textSecondary">
-                      {point.plannedTime && formatDate(point.plannedTime, 'datetime')} •
+                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+                      <Typography component="span" variant="body2" color="textSecondary">
+                        {point.plannedTime && formatDate(point.plannedTime, 'datetime')} •
+                      </Typography>
                       <StatusChip status={point.deliveryStatus} type="delivery" />
-                    </Typography>
+                    </Box>
                   </>
                 }
               />

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  Box, Typography, Chip, Button, CircularProgress,
-  SpeedDial, SpeedDialAction, SpeedDialIcon, Fab
+  Box, Typography, Button, CircularProgress,
+  SpeedDial, SpeedDialAction, SpeedDialIcon, Fab, Chip
 } from '@mui/material';
+import StatusChip from '../common/StatusChip';
 import DirectionsIcon from '@mui/icons-material/Directions';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -71,7 +72,7 @@ const MapControl = ({ positions, driverPosition, mapRef }) => {
       try {
         const bounds = L.latLngBounds(positions);
         if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [48, 48] });
+          map.fitBounds(bounds, { padding: [48, 48], animate: false });
         }
       } catch (_e) {
         // positions invalides
@@ -121,10 +122,10 @@ const DeliveryMap = ({ route, onStatusUpdate, onLocationUpdate, loading = false 
   const [nextStopIndex, setNextStopIndex] = useState(-1);
   const mapRef = React.useRef(null);
 
-  const allPositions = [
+  const allPositions = useMemo(() => [
     ...(driverPosition ? [driverPosition] : []),
     ...routePoints.map(p => p.position)
-  ];
+  ], [driverPosition, routePoints]);
 
   useEffect(() => {
     if (!route?.deliveryPoints) return;
@@ -313,15 +314,7 @@ const DeliveryMap = ({ route, onStatusUpdate, onLocationUpdate, loading = false 
                 <Typography variant="body2" color="text.secondary">{point.address}</Typography>
 
                 <Box sx={{ mt: 1, mb: 1 }}>
-                  <Chip
-                    size="small"
-                    label={point.status}
-                    color={
-                      point.status === 'COMPLETED' ? 'success' :
-                      point.status === 'IN_PROGRESS' ? 'warning' :
-                      point.status === 'FAILED' ? 'error' : 'default'
-                    }
-                  />
+                  <StatusChip status={point.status} type="delivery" />
                   {nextStopIndex === index && (
                     <Chip size="small" label="Prochain arrêt" color="info" sx={{ ml: 1 }} />
                   )}
