@@ -21,7 +21,11 @@ export const getCurrentUser = () => {
   }
 };
 
-// Appelle le backend pour effacer le cookie httpOnly JWT
-export const logout = () => {
-  return api.post('/auth/logout');
+export const refreshToken = (token) => {
+  return api.post('/auth/refresh', { refreshToken: token });
+};
+
+// Appelle le backend pour effacer le cookie httpOnly JWT + invalider le refresh token
+export const logout = (refreshToken) => {
+  return api.post('/auth/logout', refreshToken ? { refreshToken } : undefined);
 };

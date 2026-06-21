@@ -206,8 +206,7 @@ const ManageDrivers = () => {
       handleCloseDialog();
       fetchDrivers();
     } catch (err) {
-      const msg = err.response?.data?.error || err.response?.data?.message || `Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} du chauffeur`;
-      error(msg);
+      error(getApiError(err, `Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} du chauffeur`));
     } finally {
       setSubmitting(false);
     }

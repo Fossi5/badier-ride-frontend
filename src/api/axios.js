@@ -13,34 +13,59 @@ const api = axios.create({
   withCredentials: true,
 });
 
+let isRefreshing = false;
+let pendingRequests = [];
+
+const flushPending = (error) => {
+  pendingRequests.forEach((cb) => cb(error));
+  pendingRequests = [];
+};
+
 // Intercepteur pour gérer les erreurs d'authentification et réseau
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
     if (error.response) {
       if (error.response.status === 401) {
-        const errorMessage =
-          error.response.data?.message || error.response.data?.error || "";
+        const isAuthEndpoint = originalRequest.url.includes("/auth/");
 
-        // Vérifier si c'est un problème de token (token expiré ou invalide)
-        // Ne rediriger que si le token est expiré/invalide sur une route protégée.
-        // Les erreurs 401 sur /auth/ (ex: mauvais mot de passe) sont gérées par le composant Login.
-        const isAuthEndpoint = error.config.url.includes("/auth/");
-        if (
-          !isAuthEndpoint && (
-            errorMessage.toLowerCase().includes("token") ||
-            errorMessage.toLowerCase().includes("expired") ||
-            errorMessage.toLowerCase().includes("invalid") ||
-            errorMessage.toLowerCase().includes("unauthorized")
-          )
-        ) {
-          // Session expirée : nettoyage des métadonnées et redirection vers login
+        // Sur les endpoints /auth/ (login, register…), on laisse le composant gérer l'erreur
+        if (isAuthEndpoint) {
+          return Promise.reject(error);
+        }
+
+        // Éviter les boucles infinies sur la requête de refresh elle-même
+        if (originalRequest._retry) {
           localStorage.removeItem("userInfo");
           window.location.href = "/login";
+          return Promise.reject(error);
         }
-        // Sinon, erreur 401 liée aux permissions : on laisse le composant gérer l'erreur
+
+        if (isRefreshing) {
+          // Mettre la requête en attente pendant que le refresh est en cours
+          return new Promise((_, reject) => {
+            pendingRequests.push((err) => reject(err));
+          });
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          // Tenter de rafraîchir le token via le cookie httpOnly
+          await api.post("/auth/refresh", {});
+          isRefreshing = false;
+          flushPending(null);
+          return api(originalRequest);
+        } catch (refreshError) {
+          isRefreshing = false;
+          flushPending(refreshError);
+          localStorage.removeItem("userInfo");
+          window.location.href = "/login";
+          return Promise.reject(refreshError);
+        }
       }
     } else if (error.request) {
       // La requête a été faite mais aucune réponse n'a été reçue (problème réseau)

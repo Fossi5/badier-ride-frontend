@@ -20,9 +20,8 @@ export default function ProofUpload({ routeId, deliveryPointId, onValidated }) {
     const form = new FormData();
     form.append('file', file);
     try {
-      await api.post(`/routes/${routeId}/delivery-points/${deliveryPointId}/proof/upload`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // Ne pas forcer Content-Type sur FormData : axios génère automatiquement le boundary correct
+      await api.post(`/routes/${routeId}/delivery-points/${deliveryPointId}/proof/upload`, form);
       success('Photo enregistrée');
       onValidated?.();
     } catch {

@@ -30,7 +30,7 @@ import MapIcon from '@mui/icons-material/Map';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import { useAlert } from '../../context/AlertContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import StatusChip from '../../components/common/StatusChip';
 import RouteMap from '../../components/maps/RouteMap';
 import { getAllRoutes, optimizeRoute } from '../../api/routes';
@@ -45,16 +45,27 @@ const RouteOptimization = () => {
   
   const { success, error } = useAlert();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     fetchRoutes();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchRoutes = async () => {
     try {
       setLoading(true);
       const response = await getAllRoutes();
-      setRoutes(response.data);
+      const fetchedRoutes = response.data;
+      setRoutes(fetchedRoutes);
+
+      const routeIdFromUrl = searchParams.get('routeId');
+      if (routeIdFromUrl) {
+        const preselected = fetchedRoutes.find(r => String(r.id) === String(routeIdFromUrl));
+        if (preselected) {
+          setSelectedRoute(preselected.id);
+          setCurrentRoute(preselected);
+        }
+      }
     } catch (err) {
       if (err.response && err.response.status === 401) {
         error('Session expirée. Vous allez être redirigé vers la page de connexion.');

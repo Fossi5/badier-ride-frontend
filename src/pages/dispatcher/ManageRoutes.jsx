@@ -34,6 +34,7 @@ import { getAllDeliveryPoints } from '../../api/deliveryPoints';
 
 import { useAlert } from '../../context/AlertContext';
 import { useAuth } from '../../context/AuthContext';
+import { getApiError } from '../../utils/apiError';
 
 import RouteTable from './components/RouteTable';
 import RouteFormDialog from './components/RouteFormDialog';
@@ -279,7 +280,7 @@ const ManageRoutes = () => {
       handleCloseRouteDialog();
       fetchRoutes();
     } catch (err) {
-      error(`Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée : ` + (err.response?.data?.error || err.message));
+      error(getApiError(err, `Erreur lors de la ${dialogMode === 'create' ? 'création' : 'mise à jour'} de la tournée`));
     } finally {
       setSubmitting(false);
     }

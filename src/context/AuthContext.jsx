@@ -61,12 +61,14 @@ export const AuthProvider = ({ children }) => {
   // Fonction de déconnexion
   const logout = async () => {
     try {
-      // Demander au backend d'effacer le cookie httpOnly
-      await apiLogout();
+      const refreshToken = localStorage.getItem('refreshToken');
+      // Envoyer le refresh token pour que le backend l'invalide en base
+      await apiLogout(refreshToken);
     } catch (e) {
       // Ignorer les erreurs réseau lors du logout
     } finally {
       localStorage.removeItem('userInfo');
+      localStorage.removeItem('refreshToken');
       setCurrentUser(null);
       navigate('/login');
     }
