@@ -39,7 +39,6 @@ export const geocodeAddress = async (address) => {
       .filter(Boolean)
       .join(", ");
 
-    console.log("🌍 Géocodage de:", query);
 
     const url = `${NOMINATIM_API}?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`;
 
@@ -139,11 +138,6 @@ export const calculateRoute = async (coordinates) => {
       const distance = (route.distance / 1000).toFixed(2); // en km
       const duration = Math.round(route.duration / 60); // en minutes
 
-      console.log("✅ Itinéraire calculé:", {
-        distance: `${distance} km`,
-        duration: `${duration} min`,
-        points: routeCoordinates.length,
-      });
 
       return {
         coordinates: routeCoordinates,

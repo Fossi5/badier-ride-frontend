@@ -32,9 +32,11 @@ import {
   LocalShipping as ShippingIcon,
   Notes as NotesIcon,
   MyLocation as MyLocationIcon,
-  PhotoCamera as PhotoCameraIcon
+  PhotoCamera as PhotoCameraIcon,
+  InfoOutlined as InfoOutlinedIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
+import RouteChat from '../../components/common/RouteChat';
 import { format } from 'date-fns';
 
 // Import des composants personnalisés
@@ -57,6 +59,7 @@ const RouteDetails = () => {
   const [updating, setUpdating] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(null);
   const [proofDialog, setProofDialog] = useState(null);
+  const [infoDialog, setInfoDialog] = useState(null);
 
   const navigate = useNavigate();
   const { success, error, info } = useAlert();
@@ -360,6 +363,11 @@ const RouteDetails = () => {
                         }
                       />
                       <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+                        <Tooltip title="Infos client">
+                          <IconButton size="small" onClick={() => setInfoDialog(point)}>
+                            <InfoOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                         {point.deliveryStatus === 'PENDING' && route.status === 'IN_PROGRESS' && (
                           <Tooltip title="Marquer comme en cours">
                             <IconButton
@@ -432,6 +440,15 @@ const RouteDetails = () => {
               )}
             </List>
           </Paper>
+
+          <Paper sx={{ mt: 2, height: 380, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Typography variant="h6">Messages</Typography>
+            </Box>
+            <Box sx={{ flex: 1, overflow: 'hidden' }}>
+              <RouteChat routeId={id} routeStatus={route.status} />
+            </Box>
+          </Paper>
         </Grid>
 
         {/* Colonne de droite: Carte */}
@@ -480,6 +497,40 @@ const RouteDetails = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      <Dialog open={!!infoDialog} onClose={() => setInfoDialog(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Infos — {infoDialog?.clientName}</DialogTitle>
+        <DialogContent>
+          {infoDialog?.clientPhoneNumber && (
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2"><strong>Tél :</strong> {infoDialog.clientPhoneNumber}</Typography>
+            </Box>
+          )}
+          {infoDialog?.clientEmail && (
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2"><strong>Email :</strong> {infoDialog.clientEmail}</Typography>
+            </Box>
+          )}
+          {infoDialog?.clientNote && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" color="text.secondary">Note client</Typography>
+              <Typography variant="body2">{infoDialog.clientNote}</Typography>
+            </Box>
+          )}
+          {infoDialog?.deliveryNote && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" color="text.secondary">Note de livraison</Typography>
+              <Typography variant="body2">{infoDialog.deliveryNote}</Typography>
+            </Box>
+          )}
+          {!infoDialog?.clientNote && !infoDialog?.deliveryNote && !infoDialog?.clientPhoneNumber && !infoDialog?.clientEmail && (
+            <Typography color="text.secondary">Aucune information disponible</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInfoDialog(null)}>Fermer</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={!!proofDialog} onClose={() => setProofDialog(null)} maxWidth="sm" fullWidth>
         <DialogTitle>Preuve de livraison — {proofDialog?.name}</DialogTitle>

@@ -19,8 +19,10 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Route as RouteIcon,
-  Map as MapIcon
+  Map as MapIcon,
+  Chat as ChatIcon
 } from '@mui/icons-material';
+import Badge from '@mui/material/Badge';
 import { format } from 'date-fns';
 
 const RouteTable = ({
@@ -35,7 +37,9 @@ const RouteTable = ({
   onDelete,
   onOptimize,
   onUpdateStatus,
-  canEditRoute
+  canEditRoute,
+  onChat,
+  unreadCounts = {}
 }) => {
   const getOptimizeTooltip = (route) => {
     if (route.status === 'COMPLETED') return 'Tournée terminée — optimisation impossible';
@@ -95,6 +99,14 @@ const RouteTable = ({
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex' }}>
+                      <Tooltip title="Messages">
+                        <IconButton size="small" onClick={() => onChat(route)} color="info">
+                          <Badge badgeContent={unreadCounts[route.id] || 0} color="error" max={9}>
+                            <ChatIcon fontSize="small" />
+                          </Badge>
+                        </IconButton>
+                      </Tooltip>
+
                       <Tooltip title={getEditTooltip(route)}>
                         <span>
                           <IconButton

@@ -50,6 +50,7 @@ const Header = () => {
     { text: 'Chauffeurs', icon: <DirectionsCar />, path: '/admin/drivers' },
     { text: 'Répartiteurs', icon: <People />, path: '/admin/dispatchers' },
     { text: 'Points de livraison', icon: <LocalShipping />, path: '/admin/delivery-points' },
+    { text: 'Carte des chauffeurs', icon: <LocationOnIcon />, path: '/admin/driver-map' },
     { text: 'Notifications', icon: <Notifications />, path: '/admin/notifications' },
   ];
 
@@ -58,7 +59,7 @@ const Header = () => {
     { text: 'Tournées', icon: <Route />, path: '/dispatcher/routes' },
     { text: 'Optimisation', icon: <Map />, path: '/dispatcher/optimize' },
     { text: 'Points de livraison', icon: <LocalShipping />, path: '/dispatcher/delivery-points' },
-    { text: 'Alertes', icon: <LocationOnIcon />, path: '/dispatcher/alerts' },
+    { text: 'Carte des chauffeurs', icon: <Map />, path: '/dispatcher/driver-map' },
     { text: 'Notifications', icon: <Notifications />, path: '/dispatcher/notifications' },
   ];
 

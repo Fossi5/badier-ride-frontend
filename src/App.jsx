@@ -21,7 +21,7 @@ import ManageDeliveryPoints from './pages/dispatcher/ManageDeliveryPoints';
 import DriverDashboard from './pages/driver/Dashboard';
 import RouteDetails from './pages/driver/RouteDetails';
 import Notifications from './pages/shared/Notifications';
-import Alerts from './pages/dispatcher/Alerts';
+import DriverMap from './pages/shared/DriverMap';
 
 const theme = createTheme({
   palette: {
@@ -77,6 +77,7 @@ function App() {
                 <Route path="dispatchers" element={<ManageDispatchers />} />
                 <Route path="routes" element={<ManageRoutes />} />
                 <Route path="delivery-points" element={<ManageDeliveryPoints />} />
+                <Route path="driver-map" element={<DriverMap />} />
                 <Route path="notifications" element={<Notifications />} />
               </Route>
 
@@ -85,7 +86,7 @@ function App() {
                 <Route path="routes" element={<ManageRoutes />} />
                 <Route path="optimize" element={<RouteOptimization />} />
                 <Route path="delivery-points" element={<ManageDeliveryPoints />} />
-                <Route path="alerts" element={<Alerts />} />
+                <Route path="driver-map" element={<DriverMap />} />
                 <Route path="notifications" element={<Notifications />} />
               </Route>
 

@@ -36,6 +36,7 @@ const RouteFormDialog = ({
   deliveryPoints,
   authErrors,
   currentUserRole,
+  currentUser,
   onFormChange,
   onDateChange
 }) => {
@@ -90,24 +91,15 @@ const RouteFormDialog = ({
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <FormControl
-                fullWidth
-                required={isDispatcher}
-                error={!!formErrors.dispatcherId}
-              >
-                <InputLabel>
-                  Répartiteur{isAdmin ? ' (optionnel)' : ''}
-                </InputLabel>
+              <FormControl fullWidth required error={!!formErrors.dispatcherId}>
+                <InputLabel>Répartiteur</InputLabel>
                 <Select
                   name="dispatcherId"
                   value={formData.dispatcherId}
                   onChange={onFormChange}
-                  label={`Répartiteur${isAdmin ? ' (optionnel)' : ''}`}
+                  label="Répartiteur"
                   disabled={submitting || isDispatcher || authErrors.dispatchersError}
                 >
-                  {isAdmin && (
-                    <MenuItem value=""><em>Aucun</em></MenuItem>
-                  )}
                   {dispatchers.map((dispatcher) => (
                     <MenuItem key={dispatcher.id} value={dispatcher.id}>
                       {dispatcher.username}{dispatcher.department ? ` — ${dispatcher.department}` : ''}

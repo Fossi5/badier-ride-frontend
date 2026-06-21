@@ -7,13 +7,18 @@ import {
   IconButton,
   Tooltip,
   Alert,
-  AlertTitle
+  AlertTitle,
+  Drawer,
+  Paper
 } from '@mui/material';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  Chat as ChatIcon
 } from '@mui/icons-material';
+import RouteChat from '../../components/common/RouteChat';
+import { getUnreadCount } from '../../api/messages';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
@@ -71,6 +76,9 @@ const ManageRoutes = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState(null);
 
+  const [chatRoute, setChatRoute] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
+
   const navigate = useNavigate();
   const location = useLocation();
   const shouldAutoOpenCreateDialog = location.state?.openCreateDialog;
@@ -97,9 +105,11 @@ const ManageRoutes = () => {
     setAuthErrors(prev => ({ ...prev, routesError: false }));
     try {
       const res = await getRoutesPaged(page, rowsPerPage);
-      setRoutes(res.data.content);
+      const fetchedRoutes = res.data.content;
+      setRoutes(fetchedRoutes);
       setTotalElements(res.data.totalElements);
       setTotalPages(res.data.totalPages);
+      fetchUnreadCounts(fetchedRoutes);
     } catch (err) {
       if (err.response?.status === 403) {
         setAuthErrors(prev => ({ ...prev, routesError: true }));
@@ -110,6 +120,21 @@ const ManageRoutes = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUnreadCounts = async (routeList) => {
+    const counts = {};
+    await Promise.allSettled(
+      routeList.map(async (r) => {
+        try {
+          const res = await getUnreadCount(r.id);
+          counts[r.id] = res.data.count;
+        } catch {
+          counts[r.id] = 0;
+        }
+      })
+    );
+    setUnreadCounts(counts);
   };
 
   const fetchData = async () => {
@@ -220,13 +245,18 @@ const ManageRoutes = () => {
     const errors = {};
     if (!formData.name) errors.name = 'Le nom de la tournée est obligatoire';
     if (!formData.driverId) errors.driverId = 'Veuillez sélectionner un chauffeur';
-    if (!formData.dispatcherId && currentUser?.role === 'DISPATCHER') {
-      errors.dispatcherId = 'Veuillez sélectionner un répartiteur';
-    }
+    if (!formData.dispatcherId) errors.dispatcherId = 'Veuillez sélectionner un répartiteur';
     if (formData.deliveryPointIds.length === 0) {
       errors.deliveryPointIds = 'Veuillez sélectionner au moins un point de livraison';
     }
-    if (!formData.startTime) errors.startTime = 'La date et heure de début sont obligatoires';
+    if (!formData.startTime) {
+      errors.startTime = 'La date et heure de début sont obligatoires';
+    } else if (dialogMode === 'create' && new Date(formData.startTime) < new Date(Date.now() - 60000)) {
+      errors.startTime = 'La date de début ne peut pas être dans le passé';
+    }
+    if (formData.endTime && formData.startTime && new Date(formData.endTime) <= new Date(formData.startTime)) {
+      errors.endTime = 'La date de fin doit être après la date de début';
+    }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -236,19 +266,6 @@ const ManageRoutes = () => {
 
     let submissionData = { ...formData };
 
-    if (currentUser?.role === 'DISPATCHER' && !submissionData.dispatcherId) {
-      const me = dispatchers.find(d => d.username === currentUser.username);
-      if (me) {
-        submissionData.dispatcherId = me.id;
-      } else if (dispatchers.length > 0) {
-        submissionData.dispatcherId = dispatchers[0].id;
-      } else {
-        error("Aucun répartiteur disponible. Veuillez contacter l'administrateur.");
-        return;
-      }
-    }
-
-    if (!submissionData.dispatcherId) submissionData.dispatcherId = null;
 
     setSubmitting(true);
     try {
@@ -374,6 +391,8 @@ const ManageRoutes = () => {
         onOptimize={handleOptimizeRoute}
         onUpdateStatus={handleUpdateStatus}
         canEditRoute={canEditRoute}
+        onChat={(route) => setChatRoute(route)}
+        unreadCounts={unreadCounts}
       />
 
       <RouteFormDialog
@@ -389,9 +408,30 @@ const ManageRoutes = () => {
         deliveryPoints={deliveryPoints}
         authErrors={authErrors}
         currentUserRole={currentUser?.role}
+        currentUser={currentUser}
         onFormChange={handleFormChange}
         onDateChange={handleDateChange}
       />
+
+      <Drawer anchor="right" open={!!chatRoute} onClose={() => { setChatRoute(null); setUnreadCounts(prev => ({ ...prev, [chatRoute?.id]: 0 })); }}>
+        <Paper sx={{ width: 380, height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="h6">Messages — {chatRoute?.name}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Chauffeur : {chatRoute?.driver?.username}
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            {chatRoute && (
+              <RouteChat
+                routeId={chatRoute.id}
+                routeStatus={chatRoute.status}
+                readOnly={currentUser?.role === 'ADMIN'}
+              />
+            )}
+          </Box>
+        </Paper>
+      </Drawer>
 
       <DeleteConfirmDialog
         open={openDeleteDialog}

@@ -20,12 +20,16 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Tabs,
+  Tab,
+  Badge
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { format } from 'date-fns';
 
 import { getDriverRoutes, updateRouteStatus } from '../../api/routes';
@@ -35,6 +39,8 @@ import { useAlert } from '../../context/AlertContext';
 import DeliveryMap from '../../components/maps/DeliveryMap';
 import StatusChip from '../../components/common/StatusChip';
 import ProofUpload from '../../components/delivery/ProofUpload';
+import RouteChat from '../../components/common/RouteChat';
+import { getUnreadCount } from '../../api/messages';
 
 const DriverDashboard = () => {
   const [routes, setRoutes] = useState([]);
@@ -43,6 +49,9 @@ const DriverDashboard = () => {
   const [updating, setUpdating] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
   const [proofDialog, setProofDialog] = useState(null);
+  const [infoDialog, setInfoDialog] = useState(null);
+  const [tab, setTab] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   const { success, error } = useAlert();
 
@@ -61,7 +70,14 @@ const DriverDashboard = () => {
 
       const inProgressRoute = routesResponse.data.find(r => r.status === 'IN_PROGRESS');
       const plannedRoute = routesResponse.data.find(r => r.status === 'PLANNED');
-      setActiveRoute(inProgressRoute ?? plannedRoute ?? null);
+      const active = inProgressRoute ?? plannedRoute ?? null;
+      setActiveRoute(active);
+      if (active) {
+        try {
+          const countRes = await getUnreadCount(active.id);
+          setUnreadMessages(countRes.data.count);
+        } catch { setUnreadMessages(0); }
+      }
     } catch (err) {
       error('Erreur lors du chargement des données');
     } finally {
@@ -246,71 +262,81 @@ const DriverDashboard = () => {
                     )}
                   </Box>
 
-                  <Typography variant="subtitle2" gutterBottom>
-                    Points de livraison ({activeRoute.deliveryPoints.length})
-                  </Typography>
+                  <Tabs value={tab} onChange={(_, v) => { setTab(v); if (v === 1) setUnreadMessages(0); }} sx={{ borderBottom: 1, borderColor: 'divider', mb: 1 }}>
+                    <Tab label={`Points (${activeRoute.deliveryPoints.length})`} />
+                    <Tab label={
+                      <Badge badgeContent={unreadMessages} color="error" max={9}>
+                        <Box sx={{ pr: unreadMessages > 0 ? 1.5 : 0 }}>Messages</Box>
+                      </Badge>
+                    } />
+                  </Tabs>
 
-                  <List dense sx={{ maxHeight: 300, overflow: 'auto' }}>
-                    {activeRoute.deliveryPoints.map((point, index) => (
-                      <React.Fragment key={point.id}>
-                        <ListItem
-                          secondaryAction={
-                            point.deliveryStatus !== 'COMPLETED' && point.deliveryStatus !== 'FAILED' ? (
+                  {tab === 0 && (
+                    <List dense sx={{ maxHeight: 300, overflow: 'auto' }}>
+                      {activeRoute.deliveryPoints.map((point, index) => (
+                        <React.Fragment key={point.id}>
+                          <ListItem
+                            secondaryAction={
                               <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                <Tooltip title="Livré">
-                                  <IconButton
-                                    size="small"
-                                    color="success"
-                                    onClick={() => handleStatusUpdate(point.id, 'COMPLETED')}
-                                    disabled={updating}
-                                  >
-                                    <CheckCircleIcon fontSize="small" />
+                                <Tooltip title="Infos client">
+                                  <IconButton size="small" onClick={() => setInfoDialog(point)}>
+                                    <InfoOutlinedIcon fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
-                                <Tooltip title="Échec">
-                                  <IconButton
-                                    size="small"
-                                    color="error"
-                                    onClick={() => handleStatusUpdate(point.id, 'FAILED')}
-                                    disabled={updating}
-                                  >
-                                    <CancelIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
-                            ) : null
-                          }
-                        >
-                          <ListItemText
-                            secondaryTypographyProps={{ component: 'div' }}
-                            primary={`${index + 1}. ${point.clientName}`}
-                            secondary={
-                              <Box>
-                                <Typography variant="body2" component="span" display="block">
-                                  {point.address?.street}, {point.address?.city}
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                                  <StatusChip status={point.deliveryStatus} type="delivery" size="small" />
-                                  {(point.deliveryStatus === 'IN_PROGRESS' || point.deliveryStatus === 'COMPLETED') && (
-                                    <Tooltip title="Photo / code de confirmation">
-                                      <IconButton
-                                        size="small"
-                                        color="primary"
-                                        onClick={() => setProofDialog({ routeId: activeRoute.id, pointId: point.id, name: point.clientName })}
-                                      >
-                                        <PhotoCameraIcon fontSize="small" />
+                                {point.deliveryStatus !== 'COMPLETED' && point.deliveryStatus !== 'FAILED' && (
+                                  <>
+                                    <Tooltip title="Livré">
+                                      <IconButton size="small" color="success" onClick={() => handleStatusUpdate(point.id, 'COMPLETED')} disabled={updating}>
+                                        <CheckCircleIcon fontSize="small" />
                                       </IconButton>
                                     </Tooltip>
-                                  )}
-                                </Box>
+                                    <Tooltip title="Échec">
+                                      <IconButton size="small" color="error" onClick={() => handleStatusUpdate(point.id, 'FAILED')} disabled={updating}>
+                                        <CancelIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </>
+                                )}
                               </Box>
                             }
-                          />
-                        </ListItem>
-                        {index < activeRoute.deliveryPoints.length - 1 && <Divider />}
-                      </React.Fragment>
-                    ))}
-                  </List>
+                          >
+                            <ListItemText
+                              secondaryTypographyProps={{ component: 'div' }}
+                              primary={`${index + 1}. ${point.clientName}`}
+                              secondary={
+                                <Box>
+                                  <Typography variant="body2" component="span" display="block">
+                                    {point.address?.street}, {point.address?.city}
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                    <StatusChip status={point.deliveryStatus} type="delivery" size="small" />
+                                    {(point.deliveryStatus === 'IN_PROGRESS' || point.deliveryStatus === 'COMPLETED') && (
+                                      <Tooltip title="Photo / code de confirmation">
+                                        <IconButton
+                                          size="small"
+                                          color="primary"
+                                          onClick={() => setProofDialog({ routeId: activeRoute.id, pointId: point.id, name: point.clientName })}
+                                        >
+                                          <PhotoCameraIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    )}
+                                  </Box>
+                                </Box>
+                              }
+                            />
+                          </ListItem>
+                          {index < activeRoute.deliveryPoints.length - 1 && <Divider />}
+                        </React.Fragment>
+                      ))}
+                    </List>
+                  )}
+
+                  {tab === 1 && (
+                    <Box sx={{ height: 300, display: 'flex', flexDirection: 'column', overflow: 'hidden', mx: -2 }}>
+                      <RouteChat routeId={activeRoute.id} routeStatus={activeRoute.status} />
+                    </Box>
+                  )}
                 </>
               ) : (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
@@ -332,6 +358,40 @@ const DriverDashboard = () => {
           </Grid>
         </Grid>
       )}
+      <Dialog open={!!infoDialog} onClose={() => setInfoDialog(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Infos — {infoDialog?.clientName}</DialogTitle>
+        <DialogContent>
+          {infoDialog?.clientPhoneNumber && (
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2"><strong>Tél :</strong> {infoDialog.clientPhoneNumber}</Typography>
+            </Box>
+          )}
+          {infoDialog?.clientEmail && (
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2"><strong>Email :</strong> {infoDialog.clientEmail}</Typography>
+            </Box>
+          )}
+          {infoDialog?.clientNote && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" color="text.secondary">Note client</Typography>
+              <Typography variant="body2">{infoDialog.clientNote}</Typography>
+            </Box>
+          )}
+          {infoDialog?.deliveryNote && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" color="text.secondary">Note de livraison</Typography>
+              <Typography variant="body2">{infoDialog.deliveryNote}</Typography>
+            </Box>
+          )}
+          {!infoDialog?.clientNote && !infoDialog?.deliveryNote && !infoDialog?.clientPhoneNumber && !infoDialog?.clientEmail && (
+            <Typography color="text.secondary">Aucune information disponible</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInfoDialog(null)}>Fermer</Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={!!proofDialog} onClose={() => setProofDialog(null)} maxWidth="sm" fullWidth>
         <DialogTitle>Preuve de livraison — {proofDialog?.name}</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
