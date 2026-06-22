@@ -34,6 +34,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import StatusChip from '../../components/common/StatusChip';
 import RouteMap from '../../components/maps/RouteMap';
 import { getAllRoutes, optimizeRoute } from '../../api/routes';
+import { getApiError } from '../../utils/apiError';
 
 const RouteOptimization = () => {
   const [routes, setRoutes] = useState([]);
@@ -98,24 +99,16 @@ const RouteOptimization = () => {
     setOptimizing(true);
     
     try {
-      await optimizeRoute(selectedRoute);
-      success('Tournée optimisée avec succès!');
-      
-      await fetchRoutes();
-      
-      if (selectedRoute) {
-        const updatedRoute = routes.find(route => String(route.id) === String(selectedRoute));
-        setCurrentRoute(updatedRoute);
-        
-        setDistance(null);
-      }
+      const res = await optimizeRoute(selectedRoute);
+      const optimizedRoute = res.data;
+
+      success('Tournée optimisée avec succès !');
+      setCurrentRoute(optimizedRoute);
+      setDistance(null);
+
+      fetchRoutes();
     } catch (err) {
-      if (err.response && err.response.status === 401) {
-        error('Session expirée. Veuillez vous reconnecter.');
-      } else {
-        const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Erreur inconnue';
-        error('Erreur lors de l\'optimisation: ' + errorMessage);
-      }
+      error(getApiError(err, "Erreur lors de l'optimisation"));
     } finally {
       setOptimizing(false);
     }

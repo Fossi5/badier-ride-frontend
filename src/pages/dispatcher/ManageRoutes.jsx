@@ -30,7 +30,7 @@ import {
 } from '../../api/routes';
 import { getAllDrivers, getAvailableDrivers } from '../../api/drivers';
 import { getAllDispatchers } from '../../api/dispatchers';
-import { getAllDeliveryPoints } from '../../api/deliveryPoints';
+import { getVerifiedDeliveryPoints } from '../../api/deliveryPoints';
 
 import { useAlert } from '../../context/AlertContext';
 import { useAuth } from '../../context/AuthContext';
@@ -142,7 +142,7 @@ const ManageRoutes = () => {
     setAuthErrors(prev => ({ ...prev, driversError: false, dispatchersError: false }));
 
     try {
-      const res = await getAllDeliveryPoints();
+      const res = await getVerifiedDeliveryPoints();
       setDeliveryPoints(res.data);
     } catch (err) {
       error('Erreur lors du chargement des points de livraison : ' + (err.response?.data?.error || err.message));

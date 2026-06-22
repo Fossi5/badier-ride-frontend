@@ -6,6 +6,11 @@ export const getAllDeliveryPoints = () => {
   return api.get("/delivery-points");
 };
 
+// Récupérer uniquement les points de livraison avec adresse vérifiée (pour création de tournée)
+export const getVerifiedDeliveryPoints = () => {
+  return api.get("/delivery-points/verified");
+};
+
 // Récupérer les points de livraison paginés
 export const getDeliveryPointsPaged = (page = 0, size = 20) => {
   return api.get(`/delivery-points/paged?page=${page}&size=${size}`);

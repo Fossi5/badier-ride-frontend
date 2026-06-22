@@ -1,21 +1,25 @@
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, List, ListItem, ListItemIcon, ListItemText,
-  Button, CircularProgress, Divider, Paper
+  Button, CircularProgress, Divider, Paper, IconButton, Tooltip
 } from '@mui/material';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import EditIcon from '@mui/icons-material/Edit';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
+import MessageIcon from '@mui/icons-material/Message';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
-import { getNotifications, markAllRead } from '../../api/notifications';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import { getNotifications, markAllRead, deleteNotification, deleteAllNotifications } from '../../api/notifications';
 import { useAlert } from '../../context/AlertContext';
 
 const TYPE_ICONS = {
-  NEW_ROUTE: <DirectionsCarIcon color="primary" />,
+  NEW_ROUTE:    <DirectionsCarIcon color="primary" />,
   ROUTE_UPDATE: <EditIcon color="warning" />,
-  ALERT: <WarningIcon color="error" />,
-  SYSTEM: <InfoIcon color="info" />,
+  ALERT:        <WarningIcon color="error" />,
+  SYSTEM:       <InfoIcon color="info" />,
+  MESSAGE:      <MessageIcon color="secondary" />,
 };
 
 export default function Notifications() {
@@ -38,9 +42,32 @@ export default function Notifications() {
   useEffect(() => { load(); }, []);
 
   const handleMarkAllRead = async () => {
-    await markAllRead();
-    success('Notifications marquées comme lues');
-    load();
+    try {
+      await markAllRead();
+      success('Notifications marquées comme lues');
+      load();
+    } catch {
+      showError('Erreur lors de la mise à jour');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteNotification(id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch {
+      showError('Erreur lors de la suppression');
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      await deleteAllNotifications();
+      setNotifications([]);
+      success('Toutes les notifications supprimées');
+    } catch {
+      showError('Erreur lors de la suppression');
+    }
   };
 
   if (loading) return <Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>;
@@ -49,14 +76,27 @@ export default function Notifications() {
     <Box sx={{ maxWidth: 700, mx: 'auto', mt: 4, px: 2 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5">Notifications</Typography>
-        <Button
-          startIcon={<DoneAllIcon />}
-          onClick={handleMarkAllRead}
-          disabled={notifications.every(n => n.isRead)}
-        >
-          Tout marquer comme lu
-        </Button>
+        <Box display="flex" gap={1}>
+          <Button
+            startIcon={<DoneAllIcon />}
+            onClick={handleMarkAllRead}
+            disabled={notifications.every(n => n.isRead)}
+            size="small"
+          >
+            Tout lire
+          </Button>
+          <Button
+            startIcon={<DeleteSweepIcon />}
+            onClick={handleDeleteAll}
+            disabled={notifications.length === 0}
+            color="error"
+            size="small"
+          >
+            Tout supprimer
+          </Button>
+        </Box>
       </Box>
+
       {notifications.length === 0 ? (
         <Typography color="text.secondary" textAlign="center" mt={4}>Aucune notification</Typography>
       ) : (
@@ -64,11 +104,25 @@ export default function Notifications() {
           <List disablePadding>
             {notifications.map((n, i) => (
               <Box key={n.id}>
-                <ListItem sx={{ bgcolor: n.isRead ? 'inherit' : 'action.hover' }}>
+                <ListItem
+                  sx={{ bgcolor: n.isRead ? 'inherit' : 'action.hover' }}
+                  secondaryAction={
+                    <Tooltip title="Supprimer">
+                      <IconButton edge="end" size="small" onClick={() => handleDelete(n.id)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  }
+                >
                   <ListItemIcon>{TYPE_ICONS[n.type] ?? <InfoIcon />}</ListItemIcon>
                   <ListItemText
                     primary={n.message}
-                    secondary={n.createdAt ? new Date(n.createdAt).toLocaleString('fr-FR') : ''}
+                    secondary={
+                      <>
+                        {n.senderUsername && <span style={{ marginRight: 8 }}>De : {n.senderUsername}</span>}
+                        {n.createdAt ? new Date(n.createdAt).toLocaleString('fr-FR') : ''}
+                      </>
+                    }
                   />
                 </ListItem>
                 {i < notifications.length - 1 && <Divider />}

@@ -19,9 +19,11 @@ import {
   Checkbox,
   ListItemText as MuiListItemText
 } from '@mui/material';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { fr } from 'date-fns/locale';
 
 const RouteFormDialog = ({
   open,
@@ -152,39 +154,98 @@ const RouteFormDialog = ({
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DateTimePicker
-                  label="Date et heure de début"
-                  value={formData.startTime}
-                  onChange={(date) => onDateChange('startTime', date)}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                      error: !!formErrors.startTime,
-                      helperText: formErrors.startTime,
-                      disabled: submitting
-                    }
-                  }}
-                />
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
+                <Grid container spacing={1}>
+                  <Grid item xs={7}>
+                    <DatePicker
+                      label="Date de début *"
+                      value={formData.startTime}
+                      onChange={(date) => {
+                        if (!date) return onDateChange('startTime', null);
+                        const prev = formData.startTime ? new Date(formData.startTime) : new Date();
+                        date.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                        onDateChange('startTime', date);
+                      }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!formErrors.startTime,
+                          disabled: submitting,
+                          size: 'small'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={5}>
+                    <TimePicker
+                      label="Heure *"
+                      value={formData.startTime}
+                      onChange={(time) => {
+                        if (!time) return;
+                        const prev = formData.startTime ? new Date(formData.startTime) : new Date();
+                        prev.setHours(time.getHours(), time.getMinutes(), 0, 0);
+                        onDateChange('startTime', new Date(prev));
+                      }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!formErrors.startTime,
+                          helperText: formErrors.startTime,
+                          disabled: submitting,
+                          size: 'small'
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
               </LocalizationProvider>
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DateTimePicker
-                  label="Date et heure de fin (optionnel)"
-                  value={formData.endTime}
-                  onChange={(date) => onDateChange('endTime', date)}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      error: !!formErrors.endTime,
-                      helperText: formErrors.endTime,
-                      disabled: submitting
-                    }
-                  }}
-                />
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
+                <Grid container spacing={1}>
+                  <Grid item xs={7}>
+                    <DatePicker
+                      label="Date de fin"
+                      value={formData.endTime}
+                      onChange={(date) => {
+                        if (!date) return onDateChange('endTime', null);
+                        const prev = formData.endTime ? new Date(formData.endTime) : new Date();
+                        date.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+                        onDateChange('endTime', date);
+                      }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!formErrors.endTime,
+                          disabled: submitting,
+                          size: 'small'
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={5}>
+                    <TimePicker
+                      label="Heure fin"
+                      value={formData.endTime}
+                      onChange={(time) => {
+                        if (!time) return;
+                        const prev = formData.endTime ? new Date(formData.endTime) : new Date();
+                        prev.setHours(time.getHours(), time.getMinutes(), 0, 0);
+                        onDateChange('endTime', new Date(prev));
+                      }}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!formErrors.endTime,
+                          helperText: formErrors.endTime,
+                          disabled: submitting,
+                          size: 'small'
+                        }
+                      }}
+                    />
+                  </Grid>
+                </Grid>
               </LocalizationProvider>
             </Grid>
 

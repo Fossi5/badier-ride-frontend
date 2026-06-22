@@ -20,7 +20,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 // Services API
 import { getAvailableDrivers } from '../../api/drivers';
 import { getAllDispatchers } from '../../api/dispatchers';
-import { getAllDeliveryPoints } from '../../api/deliveryPoints';
+import { getVerifiedDeliveryPoints } from '../../api/deliveryPoints';
 
 // Context
 import { useAlert } from '../../context/AlertContext';
@@ -60,7 +60,7 @@ const RouteForm = ({ initialData, onSubmit, onCancel, submitting }) => {
       const [driversRes, dispatchersRes, deliveryPointsRes] = await Promise.all([
         getAvailableDrivers(),
         getAllDispatchers(),
-        getAllDeliveryPoints()
+        getVerifiedDeliveryPoints()
       ]);
 
       setDrivers(driversRes.data);

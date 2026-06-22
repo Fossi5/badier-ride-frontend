@@ -412,7 +412,7 @@ const RouteDetails = () => {
                         )}
                       </Box>
                     </Box>
-                    {(point.deliveryStatus === 'IN_PROGRESS' || point.deliveryStatus === 'COMPLETED') && (
+                    {point.deliveryStatus === 'COMPLETED' && !point.proofImagePath && !point.proofValidated && (
                       <Box sx={{ pl: 7, mt: 0.5 }}>
                         <Tooltip title="Photo / code de confirmation">
                           <Button

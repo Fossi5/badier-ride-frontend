@@ -310,7 +310,7 @@ const DriverDashboard = () => {
                                   </Typography>
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                                     <StatusChip status={point.deliveryStatus} type="delivery" size="small" />
-                                    {(point.deliveryStatus === 'IN_PROGRESS' || point.deliveryStatus === 'COMPLETED') && (
+                                    {point.deliveryStatus === 'COMPLETED' && !point.proofImagePath && !point.proofValidated && (
                                       <Tooltip title="Photo / code de confirmation">
                                         <IconButton
                                           size="small"
