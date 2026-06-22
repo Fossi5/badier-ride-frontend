@@ -7,9 +7,7 @@ import {
   IconButton,
   Tooltip,
   Alert,
-  AlertTitle,
-  Drawer,
-  Paper
+  AlertTitle
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -17,8 +15,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Chat as ChatIcon
 } from '@mui/icons-material';
-import RouteChat from '../../components/common/RouteChat';
-import { getUnreadCount } from '../../api/messages';
+import { getUnreadCountsBulk } from '../../api/messages';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import {
@@ -39,6 +36,7 @@ import { getApiError } from '../../utils/apiError';
 import RouteTable from './components/RouteTable';
 import RouteFormDialog from './components/RouteFormDialog';
 import DeleteConfirmDialog from './components/DeleteConfirmDialog';
+import RouteChatDrawer from './components/RouteChatDrawer';
 
 const ManageRoutes = () => {
   const [routes, setRoutes] = useState([]);
@@ -124,18 +122,15 @@ const ManageRoutes = () => {
   };
 
   const fetchUnreadCounts = async (routeList) => {
-    const counts = {};
-    await Promise.allSettled(
-      routeList.map(async (r) => {
-        try {
-          const res = await getUnreadCount(r.id);
-          counts[r.id] = res.data.count;
-        } catch {
-          counts[r.id] = 0;
-        }
-      })
-    );
-    setUnreadCounts(counts);
+    if (!routeList.length) return;
+    try {
+      const res = await getUnreadCountsBulk(routeList.map(r => r.id));
+      setUnreadCounts(res.data);
+    } catch {
+      const counts = {};
+      routeList.forEach(r => { counts[r.id] = 0; });
+      setUnreadCounts(counts);
+    }
   };
 
   const fetchData = async () => {
@@ -414,25 +409,11 @@ const ManageRoutes = () => {
         onDateChange={handleDateChange}
       />
 
-      <Drawer anchor="right" open={!!chatRoute} onClose={() => { setChatRoute(null); setUnreadCounts(prev => ({ ...prev, [chatRoute?.id]: 0 })); }}>
-        <Paper sx={{ width: 380, height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="h6">Messages — {chatRoute?.name}</Typography>
-            <Typography variant="caption" color="text.secondary">
-              Chauffeur : {chatRoute?.driver?.username}
-            </Typography>
-          </Box>
-          <Box sx={{ flex: 1, overflow: 'hidden' }}>
-            {chatRoute && (
-              <RouteChat
-                routeId={chatRoute.id}
-                routeStatus={chatRoute.status}
-                readOnly={currentUser?.role === 'ADMIN'}
-              />
-            )}
-          </Box>
-        </Paper>
-      </Drawer>
+      <RouteChatDrawer
+        chatRoute={chatRoute}
+        onClose={() => { setChatRoute(null); setUnreadCounts(prev => ({ ...prev, [chatRoute?.id]: 0 })); }}
+        readOnly={currentUser?.role === 'ADMIN'}
+      />
 
       <DeleteConfirmDialog
         open={openDeleteDialog}

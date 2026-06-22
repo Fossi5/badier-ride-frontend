@@ -17,10 +17,6 @@ import {
   CardContent,
   IconButton,
   Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Tabs,
   Tab,
   Badge
@@ -38,9 +34,10 @@ import { updateDeliveryPointStatus } from '../../api/deliveryPoints';
 import { useAlert } from '../../context/AlertContext';
 import DeliveryMap from '../../components/maps/DeliveryMap';
 import StatusChip from '../../components/common/StatusChip';
-import ProofUpload from '../../components/delivery/ProofUpload';
 import RouteChat from '../../components/common/RouteChat';
 import { getUnreadCount } from '../../api/messages';
+import ClientInfoDialog from './components/ClientInfoDialog';
+import ProofDialog from './components/ProofDialog';
 
 const DriverDashboard = () => {
   const [routes, setRoutes] = useState([]);
@@ -358,55 +355,12 @@ const DriverDashboard = () => {
           </Grid>
         </Grid>
       )}
-      <Dialog open={!!infoDialog} onClose={() => setInfoDialog(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Infos — {infoDialog?.clientName}</DialogTitle>
-        <DialogContent>
-          {infoDialog?.clientPhoneNumber && (
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Typography variant="body2"><strong>Tél :</strong> {infoDialog.clientPhoneNumber}</Typography>
-            </Box>
-          )}
-          {infoDialog?.clientEmail && (
-            <Box sx={{ mb: 1 }}>
-              <Typography variant="body2"><strong>Email :</strong> {infoDialog.clientEmail}</Typography>
-            </Box>
-          )}
-          {infoDialog?.clientNote && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary">Note client</Typography>
-              <Typography variant="body2">{infoDialog.clientNote}</Typography>
-            </Box>
-          )}
-          {infoDialog?.deliveryNote && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary">Note de livraison</Typography>
-              <Typography variant="body2">{infoDialog.deliveryNote}</Typography>
-            </Box>
-          )}
-          {!infoDialog?.clientNote && !infoDialog?.deliveryNote && !infoDialog?.clientPhoneNumber && !infoDialog?.clientEmail && (
-            <Typography color="text.secondary">Aucune information disponible</Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setInfoDialog(null)}>Fermer</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={!!proofDialog} onClose={() => setProofDialog(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Preuve de livraison — {proofDialog?.name}</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          {proofDialog && (
-            <ProofUpload
-              routeId={proofDialog.routeId}
-              deliveryPointId={proofDialog.pointId}
-              onValidated={() => { setProofDialog(null); fetchData(); }}
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setProofDialog(null)}>Fermer</Button>
-        </DialogActions>
-      </Dialog>
+      <ClientInfoDialog point={infoDialog} onClose={() => setInfoDialog(null)} />
+      <ProofDialog
+        proofDialog={proofDialog}
+        onClose={() => setProofDialog(null)}
+        onValidated={() => { setProofDialog(null); fetchData(); }}
+      />
     </Container>
   );
 };

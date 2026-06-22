@@ -98,7 +98,7 @@ const LocationMarker = ({ onLocationUpdate, onPositionChange }) => {
 
   useEffect(() => {
     map.locate({ setView: true });
-    const interval = setInterval(() => map.locate(), 30000);
+    const interval = setInterval(() => map.locate(), 60000);
     return () => clearInterval(interval);
   }, [map]);
 
@@ -141,7 +141,6 @@ const DeliveryMap = ({ route, onStatusUpdate, onLocationUpdate, loading = false 
           position = [point.address.latitude, point.address.longitude];
         } else if (point.address?.street && point.address?.city) {
           position = await geocodeAddress(point.address);
-          await new Promise(resolve => setTimeout(resolve, 1100));
         }
 
         if (position) {

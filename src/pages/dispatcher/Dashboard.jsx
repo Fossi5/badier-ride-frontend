@@ -5,8 +5,6 @@ import {
   Grid,
   Paper,
   Typography,
-  Card,
-  CardContent,
   Box,
   Button,
   CircularProgress,
@@ -18,7 +16,6 @@ import {
   Avatar,
   IconButton,
   Tooltip,
-  Chip,
   Tab,
   Tabs
 } from '@mui/material';
@@ -32,7 +29,6 @@ import {
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   Schedule as ScheduleIcon,
-  Person as PersonIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -52,6 +48,7 @@ import { useAlert } from '../../context/AlertContext';
 import { exportRoutes } from '../../api/export';
 import { downloadFile } from '../../utils/downloadFile';
 import StatusChip from '../../components/common/StatusChip';
+import DispatcherStatsCards from './components/DispatcherStatsCards';
 
 const DispatcherDashboard = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -142,135 +139,15 @@ const DispatcherDashboard = () => {
         </Box>
       ) : (
         <>
-          {/* Carte d'informations et statistiques */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {/* Carte du répartiteur */}
-            <Grid item xs={12} md={3}>
-              <Card>
-                <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
-                    Répartiteur
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                      <PersonIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6">
-                        {profile?.username || "Utilisateur"}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        {profile?.department || "Département"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Statistiques des tournées */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
-                    Tournées
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
-                      <RouteIcon />
-                    </Avatar>
-                    <Typography variant="h5">
-                      {todayRoutes.length}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="textSecondary">
-                      Actives: {activeRoutes.length}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Planifiées: {plannedRoutes.length}
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                    onClick={() => navigate('/dispatcher/routes')}
-                  >
-                    Voir toutes
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Statistiques des points de livraison */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
-                    Points de livraison
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                      <LocationIcon />
-                    </Avatar>
-                    <Typography variant="h5">
-                      {pendingDeliveries.length}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="textSecondary">
-                      En attente d'assignation
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    sx={{ mt: 2 }}
-                    onClick={() => navigate('/dispatcher/delivery-points')}
-                  >
-                    Gérer
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Statistiques des chauffeurs */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Typography color="textSecondary" gutterBottom>
-                    Chauffeurs disponibles
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                      <DriverIcon />
-                    </Avatar>
-                    <Typography variant="h5">
-                      {allAvailableDrivers.length}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="textSecondary">
-                      Prêts pour assignation
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    fullWidth
-                    startIcon={<AddIcon />}
-                    sx={{ mt: 2 }}
-                    onClick={navigateToCreateRoute}
-                  >
-                    Nouvelle tournée
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+          <DispatcherStatsCards
+            profile={profile}
+            todayRoutes={todayRoutes}
+            activeRoutes={activeRoutes}
+            plannedRoutes={plannedRoutes}
+            pendingDeliveries={pendingDeliveries}
+            allAvailableDrivers={allAvailableDrivers}
+            onCreateRoute={navigateToCreateRoute}
+          />
 
           {/* Onglets pour les différentes sections */}
           <Paper sx={{ width: '100%', mb: 4 }}>

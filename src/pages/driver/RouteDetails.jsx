@@ -1,56 +1,29 @@
-// src/pages/driver/RouteDetails.jsx
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
-  Typography,
-  Box,
-  Paper,
-  Grid,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  Button,
-  IconButton,
-  CircularProgress,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions
+  Container, Typography, Box, Paper, Grid, Divider, List,
+  Button, IconButton, CircularProgress, Tooltip
 } from '@mui/material';
 import {
   DirectionsCar as CarIcon,
   Schedule as ScheduleIcon,
-  LocationOn as LocationIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  ArrowBack as ArrowBackIcon,
-  Phone as PhoneIcon,
   LocalShipping as ShippingIcon,
   Notes as NotesIcon,
+  CheckCircle as CheckCircleIcon,
+  ArrowBack as ArrowBackIcon,
   MyLocation as MyLocationIcon,
-  PhotoCamera as PhotoCameraIcon,
-  InfoOutlined as InfoOutlinedIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import RouteChat from '../../components/common/RouteChat';
 import { format } from 'date-fns';
-
-// Import des composants personnalisés
 import DeliveryMap from '../../components/maps/DeliveryMap';
-import ProofUpload from '../../components/delivery/ProofUpload';
-
-// Import des services API
 import { getRouteById, updateRouteStatus } from '../../api/routes';
 import { updateDeliveryPointStatus } from '../../api/deliveryPoints';
 import { updateDriverLocation, updateDriverAvailability } from '../../api/drivers';
-
-// Import du contexte d'alerte
 import { useAlert } from '../../context/AlertContext';
 import StatusChip from '../../components/common/StatusChip';
+import ClientInfoDialog from './components/ClientInfoDialog';
+import ProofDialog from './components/ProofDialog';
+import RouteDeliveryPointItem from './components/RouteDeliveryPointItem';
 
 const RouteDetails = () => {
   const { id } = useParams();
@@ -173,14 +146,7 @@ const RouteDetails = () => {
     }
   };
 
-  // Fonction pour formater l'adresse
-  const formatAddress = (address) => {
-    if (!address) return 'Adresse inconnue';
-    const { street, city, postalCode, country } = address;
-    return `${street}, ${postalCode} ${city}, ${country || ''}`.trim();
-  };
-
-  // Afficher un indicateur de chargement
+  if (loading) {
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -191,7 +157,6 @@ const RouteDetails = () => {
     );
   }
 
-  // Afficher un message si la tournée n'existe pas
   if (!route) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -333,110 +298,20 @@ const RouteDetails = () => {
               {route.deliveryPoints.map((point, index) => (
                 <React.Fragment key={point.id}>
                   {index > 0 && <Divider />}
-                  <ListItem sx={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <Box sx={{ display: 'flex', width: '100%', alignItems: 'center' }}>
-                      <ListItemAvatar>
-                        <Avatar sx={{
-                          bgcolor:
-                            point.deliveryStatus === 'COMPLETED' ? 'success.main' :
-                              point.deliveryStatus === 'IN_PROGRESS' ? 'warning.main' :
-                                point.deliveryStatus === 'FAILED' ? 'error.main' :
-                                  'grey.400'
-                        }}>
-                          <LocationIcon />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={point.clientName}
-                        secondary={
-                          <>
-                            <Typography variant="body2" component="span" display="block">
-                              {formatAddress(point.address)}
-                            </Typography>
-                            {point.clientPhoneNumber && (
-                              <Typography variant="body2" component="span" display="block">
-                                <PhoneIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
-                                {point.clientPhoneNumber}
-                              </Typography>
-                            )}
-                          </>
-                        }
-                      />
-                      <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
-                        <Tooltip title="Infos client">
-                          <IconButton size="small" onClick={() => setInfoDialog(point)}>
-                            <InfoOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        {point.deliveryStatus === 'PENDING' && route.status === 'IN_PROGRESS' && (
-                          <Tooltip title="Marquer comme en cours">
-                            <IconButton
-                              edge="end"
-                              onClick={() => handleStatusUpdate(point.id, 'IN_PROGRESS')}
-                              disabled={updating}
-                              color="warning"
-                            >
-                              <LocationIcon />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-
-                        {point.deliveryStatus === 'IN_PROGRESS' && (
-                          <>
-                            <Tooltip title="Marquer comme livré">
-                              <IconButton
-                                edge="end"
-                                onClick={() => handleStatusUpdate(point.id, 'COMPLETED')}
-                                disabled={updating}
-                                color="success"
-                                sx={{ mr: 1 }}
-                              >
-                                <CheckCircleIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Marquer comme échec">
-                              <IconButton
-                                edge="end"
-                                onClick={() => handleStatusUpdate(point.id, 'FAILED')}
-                                disabled={updating}
-                                color="error"
-                              >
-                                <CancelIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </>
-                        )}
-
-                        {(point.deliveryStatus === 'COMPLETED' || point.deliveryStatus === 'FAILED') && (
-                          <StatusChip status={point.deliveryStatus} type="delivery" />
-                        )}
-                      </Box>
-                    </Box>
-                    {point.deliveryStatus === 'COMPLETED' && !point.proofImagePath && !point.proofValidated && (
-                      <Box sx={{ pl: 7, mt: 0.5 }}>
-                        <Tooltip title="Photo / code de confirmation">
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<PhotoCameraIcon />}
-                            onClick={() => setProofDialog({ pointId: point.id, name: point.clientName })}
-                          >
-                            Preuve de livraison
-                          </Button>
-                        </Tooltip>
-                      </Box>
-                    )}
-                  </ListItem>
+                  <RouteDeliveryPointItem
+                    point={point}
+                    routeStatus={route.status}
+                    updating={updating}
+                    onStatusUpdate={handleStatusUpdate}
+                    onInfoClick={setInfoDialog}
+                    onProofClick={(p) => setProofDialog({ routeId: id, pointId: p.id, name: p.clientName })}
+                  />
                 </React.Fragment>
               ))}
-
               {route.deliveryPoints.length === 0 && (
-                <ListItem>
-                  <ListItemText
-                    primary="Aucun point de livraison"
-                    secondary="Cette tournée ne contient pas de points de livraison"
-                  />
-                </ListItem>
+                <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
+                  Aucun point de livraison
+                </Typography>
               )}
             </List>
           </Paper>
@@ -498,55 +373,12 @@ const RouteDetails = () => {
         </Grid>
       </Grid>
 
-      <Dialog open={!!infoDialog} onClose={() => setInfoDialog(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Infos — {infoDialog?.clientName}</DialogTitle>
-        <DialogContent>
-          {infoDialog?.clientPhoneNumber && (
-            <Box sx={{ mb: 1 }}>
-              <Typography variant="body2"><strong>Tél :</strong> {infoDialog.clientPhoneNumber}</Typography>
-            </Box>
-          )}
-          {infoDialog?.clientEmail && (
-            <Box sx={{ mb: 1 }}>
-              <Typography variant="body2"><strong>Email :</strong> {infoDialog.clientEmail}</Typography>
-            </Box>
-          )}
-          {infoDialog?.clientNote && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary">Note client</Typography>
-              <Typography variant="body2">{infoDialog.clientNote}</Typography>
-            </Box>
-          )}
-          {infoDialog?.deliveryNote && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="subtitle2" color="text.secondary">Note de livraison</Typography>
-              <Typography variant="body2">{infoDialog.deliveryNote}</Typography>
-            </Box>
-          )}
-          {!infoDialog?.clientNote && !infoDialog?.deliveryNote && !infoDialog?.clientPhoneNumber && !infoDialog?.clientEmail && (
-            <Typography color="text.secondary">Aucune information disponible</Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setInfoDialog(null)}>Fermer</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={!!proofDialog} onClose={() => setProofDialog(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Preuve de livraison — {proofDialog?.name}</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          {proofDialog && (
-            <ProofUpload
-              routeId={id}
-              deliveryPointId={proofDialog.pointId}
-              onValidated={() => { setProofDialog(null); fetchRouteDetails(); }}
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setProofDialog(null)}>Fermer</Button>
-        </DialogActions>
-      </Dialog>
+      <ClientInfoDialog point={infoDialog} onClose={() => setInfoDialog(null)} />
+      <ProofDialog
+        proofDialog={proofDialog}
+        onClose={() => setProofDialog(null)}
+        onValidated={() => { setProofDialog(null); fetchRouteDetails(); }}
+      />
     </Container>
   );
 };
